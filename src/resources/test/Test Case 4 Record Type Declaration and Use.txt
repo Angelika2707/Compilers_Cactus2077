@@ -1,0 +1,8 @@
+type Person is record
+    name : string;
+    age : integer;
+end;
+
+var p : Person;
+p.name := "Alice";
+p.age := 30;

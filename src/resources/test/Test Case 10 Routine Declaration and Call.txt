@@ -1,0 +1,5 @@
+routine greet(name : string) is
+    print "Hello, " + name;
+end
+
+greet("World");

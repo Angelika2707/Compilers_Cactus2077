@@ -1,0 +1,14 @@
+type Address is record
+    street : string;
+    city : string;
+end;
+
+type Person is record
+    name : string;
+    address : Address;
+end;
+
+var p : Person;
+p.name := "Bob";
+p.address.street := "123 Main St";
+p.address.city := "Somewhere";
