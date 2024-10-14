@@ -2,7 +2,7 @@ package main.token;
 
 public enum TokenType {
     // Keywords
-    VAR, TYPE, ROUTINE, RETURN, IS, RECORD, ARRAY, WHILE, FOR, IF, THEN, ELSE, END, TRUE, FALSE, INTEGER, REAL, BOOLEAN,
+    VAR, TYPE, ROUTINE, RETURN, IS, RECORD, ARRAY, WHILE, FOR, LOOP, IF, THEN, ELSE, END, TRUE, FALSE, INTEGER, REAL, BOOLEAN,
     // Assignment and Operators
     ASSIGN, LT, LE, GT, GE, EQ, NE, PLUS, MINUS, MUL, DIV, MOD, AND, OR, XOR, NOT,
     // Tokens

@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 
 public class Lexer {
     private static final Pattern TOKEN_PATTERN = Pattern.compile(
-            "\\bvar\\b|\\btype\\b|\\broutine\\b|\\breturn\\b|\\bis\\b|\\brecord\\b|\\barray\\b|\\bwhile\\b|\\bfor\\b|\\breverse\\b|\\bif\\b|\\belse\\b|\\bthen\\b|\\bend\\b|\\btrue\\b|\\bfalse\\b|\\band\\b|\\bor\\b|\\bxor\\b|\\bnot\\b|\\binteger\\b|\\breal\\b|\\bboolean\\b|:=|<=|>=|<|>|=|/=|\\+|\\*|/|%|,|;|\\(|\\)|\\[|\\]|\\.\\.|\\.|:|\\d+[a-zA-Z_][a-zA-Z_0-9]*|\\d+(\\.\\d*)?|\\-?\\d+\\.\\d*|\\-?\\d+|[a-zA-Z_][a-zA-Z_0-9]*|-|\\n|\\t|\\s{4}|\\s|."
+            "\\bvar\\b|\\btype\\b|\\broutine\\b|\\breturn\\b|\\bis\\b|\\brecord\\b|\\barray\\b|\\bwhile\\b|\\bfor\\b|\\bloop\\b|\\breverse\\b|\\bif\\b|\\belse\\b|\\bthen\\b|\\bend\\b|\\btrue\\b|\\bfalse\\b|\\band\\b|\\bor\\b|\\bxor\\b|\\bnot\\b|\\binteger\\b|\\breal\\b|\\bboolean\\b|:=|<=|>=|<|>|=|/=|\\+|\\*|/|%|,|;|\\(|\\)|\\[|\\]|\\.\\.|\\.|:|\\d+[a-zA-Z_][a-zA-Z_0-9]*|\\d+(\\.\\d*)?|\\-?\\d+\\.\\d*|\\-?\\d+|[a-zA-Z_][a-zA-Z_0-9]*|-|\\n|\\t|\\s{4}|\\s|."
     );
 
     private TokenType getTokenType(String tokenText) {
@@ -23,6 +23,7 @@ public class Lexer {
             case "array": return TokenType.ARRAY;
             case "while": return TokenType.WHILE;
             case "for": return TokenType.FOR;
+            case "loop": return TokenType.LOOP;
             case "reverse": return TokenType.REVERSE;
             case "if": return TokenType.IF;
             case "then": return TokenType.THEN;
