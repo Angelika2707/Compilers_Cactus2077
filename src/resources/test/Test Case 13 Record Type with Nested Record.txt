@@ -1,14 +1,14 @@
 type Address is record
-    street : string;
-    city : string;
+    streetCode : integer;
+    cityCode : integer;
 end;
 
 type Person is record
-    name : string;
+    year : integer;
     address : Address;
 end;
 
 var p : Person;
-p.name := "Bob";
-p.address.street := "123 Main St";
-p.address.city := "Somewhere";
+p.year := 22;
+p.address.streetCode := 126;
+p.address.cityCode := 202;

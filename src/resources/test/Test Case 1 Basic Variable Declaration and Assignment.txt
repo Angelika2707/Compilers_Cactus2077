@@ -1,2 +1,5 @@
 var x : integer is 10;
 x := 20;
+
+var y1 : integer is 15;
+y1 := 25;

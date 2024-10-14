@@ -1,0 +1,11 @@
+var a : boolean;
+var b : boolean;
+var result : boolean;
+
+a := true;
+b := false;
+
+result := a and b;
+result := a or b;
+result := a xor b;
+result := not a;

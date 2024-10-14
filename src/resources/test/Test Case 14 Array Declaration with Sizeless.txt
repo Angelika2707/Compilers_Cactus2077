@@ -1,2 +1,0 @@
-type IntArray is array [ ] integer;
-var arr : IntArray;

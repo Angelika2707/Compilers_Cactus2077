@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 
 public class Lexer {
     private static final Pattern TOKEN_PATTERN = Pattern.compile(
-            "\\bvar\\b|\\btype\\b|\\broutine\\b|\\bis\\b|\\brecord\\b|\\barray\\b|\\bwhile\\b|\\bfor\\b|\\bif\\b|\\belse\\b|\\bend\\b|\\btrue\\b|\\bfalse\\b|\\binteger\\b|\\breal\\b|\\bboolean\\b|:=|<=|>=|<|>|=|/=|\\+|\\*|/|%|,|;|\\(|\\)|\\[|\\]|\\.\\.|\\.|:|\\d+(\\.\\d*)?|\\-?\\d+\\.\\d*|\\-?\\d+|[a-zA-Z_][a-zA-Z_0-9]*|-|'|\"|\\n|\\t|\\s{4}|\\s|."
+            "\\bvar\\b|\\btype\\b|\\broutine\\b|\\breturn\\b|\\bis\\b|\\brecord\\b|\\barray\\b|\\bwhile\\b|\\bfor\\b|\\breverse\\b|\\bif\\b|\\belse\\b|\\bthen\\b|\\bend\\b|\\btrue\\b|\\bfalse\\b|\\band\\b|\\bor\\b|\\bxor\\b|\\bnot\\b|\\binteger\\b|\\breal\\b|\\bboolean\\b|:=|<=|>=|<|>|=|/=|\\+|\\*|/|%|,|;|\\(|\\)|\\[|\\]|\\.\\.|\\.|:|\\d+[a-zA-Z_][a-zA-Z_0-9]*|\\d+(\\.\\d*)?|\\-?\\d+\\.\\d*|\\-?\\d+|[a-zA-Z_][a-zA-Z_0-9]*|-|\\n|\\t|\\s{4}|\\s|."
     );
 
     private TokenType getTokenType(String tokenText) {
@@ -14,12 +14,15 @@ public class Lexer {
             case "var": return TokenType.VAR;
             case "type": return TokenType.TYPE;
             case "routine": return TokenType.ROUTINE;
+            case "return": return TokenType.RETURN;
             case "is": return TokenType.IS;
             case "record": return TokenType.RECORD;
             case "array": return TokenType.ARRAY;
             case "while": return TokenType.WHILE;
             case "for": return TokenType.FOR;
+            case "reverse": return TokenType.REVERSE;
             case "if": return TokenType.IF;
+            case "then": return TokenType.THEN;
             case "else": return TokenType.ELSE;
             case "end": return TokenType.END;
             case "true": return TokenType.TRUE;
@@ -27,6 +30,10 @@ public class Lexer {
             case "integer": return TokenType.INTEGER;
             case "real": return TokenType.REAL;
             case "boolean": return TokenType.BOOLEAN;
+            case "and": return TokenType.AND;
+            case "or": return TokenType.OR;
+            case "xor": return TokenType.XOR;
+            case "not": return TokenType.NOT;
             case ":=": return TokenType.ASSIGN;
             case "<": return TokenType.LT;
             case "<=": return TokenType.LE;
@@ -50,13 +57,11 @@ public class Lexer {
             case ":": return TokenType.COLON;
             case "\n": return TokenType.NEWLINE;
             case "\t": return TokenType.TAB;
-            case "'": return TokenType.SINGLE_QUOTE;
-            case "\"": return TokenType.DOUBLE_QUOTE;
             default:
                 if (tokenText.matches("\\s{4}")) return TokenType.TAB;
                 if (tokenText.matches("\\s")) return TokenType.WHITESPACE;
-                if (tokenText.matches("-?\\d+\\.\\d*")) return TokenType.NUMBER;
-                if (tokenText.matches("-?\\d+")) return TokenType.NUMBER;
+                if (tokenText.matches("-?\\d+\\.\\d*")) return TokenType.REALNUMBER;
+                if (tokenText.matches("-?\\d+")) return TokenType.INTEGERNUMBER;
                 if (tokenText.matches("[a-zA-Z_][a-zA-Z_0-9]*")) return TokenType.IDENTIFIER;
                 return TokenType.UNKNOWN;
         }

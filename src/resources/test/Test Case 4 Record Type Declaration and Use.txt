@@ -1,8 +1,8 @@
 type Person is record
-    name : string;
+    isOld : boolean;
     age : integer;
 end;
 
 var p : Person;
-p.name := "Alice";
+p.isOld := false;
 p.age := 30;

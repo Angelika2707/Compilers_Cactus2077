@@ -17,7 +17,7 @@
 [WHITESPACE " " (l=2, p=18)] 
 [IS "is" (l=2, p=19)] 
 [WHITESPACE " " (l=2, p=21)] 
-[NUMBER "100" (l=2, p=22)] 
+[INTEGERNUMBER "100" (l=2, p=22)] 
 [SEMICOLON ";" (l=2, p=25)] 
 [NEWLINE "\n" (l=2, p=26)] 
 [VAR "var" (l=3, p=1)] 

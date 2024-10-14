@@ -15,14 +15,10 @@ public class Token {
                 .replace("\t", "\\t");
         this.line = line;
         this.pos = pos;
-        if (this.type == TokenType.NUMBER) {
-            Object tempValue;
-            try {
-                tempValue = Integer.parseInt(this.text);
-            } catch (NumberFormatException e) {
-                tempValue = Double.parseDouble(this.text);
-            }
-            this.value = tempValue;
+        if (this.type == TokenType.INTEGERNUMBER) {
+            this.value = Integer.parseInt(this.text);
+        } else if (this.type == TokenType.REALNUMBER) {
+            this.value = Double.parseDouble(this.text);
         } else {
             this.value = null;
         }

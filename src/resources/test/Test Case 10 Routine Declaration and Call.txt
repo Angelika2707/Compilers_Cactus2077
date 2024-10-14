@@ -1,5 +1,5 @@
-routine greet(name : string) is
-    print "Hello, " + name;
+routine greet(num : integer) is
+    var result : integer is num + 10;
 end
 
-greet("World");
+greet(5);
