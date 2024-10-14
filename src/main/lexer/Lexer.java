@@ -1,5 +1,8 @@
 package main.lexer;
 
+import main.token.Token;
+import main.token.TokenType;
+
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

@@ -1,4 +1,4 @@
-package main.lexer;
+package main.token;
 
 public class Token {
     private final TokenType type;

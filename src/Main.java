@@ -1,5 +1,5 @@
 import main.lexer.Lexer;
-import main.lexer.Token;
+import main.token.Token;
 
 import java.io.*;
 import java.util.ArrayList;
