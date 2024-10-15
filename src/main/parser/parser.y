@@ -4,75 +4,172 @@
 
 %code imports {
     import main.token.TokenType;
+    import main.lexer.Lexer;
+    import main.ast.*;
+    import java.util.ArrayList;
+    import java.util.List;
+    import main.token.Token;
 }
 
 %token <TokenType> VAR TYPE ROUTINE RETURN IS RECORD ARRAY WHILE FOR LOOP IF THEN ELSE END TRUE FALSE INTEGER REAL BOOLEAN
 %token <TokenType> ASSIGN LT LE GT GE EQ NE PLUS MINUS MUL DIV MOD AND OR XOR NOT
 %token <TokenType> IDENTIFIER INTEGERNUMBER REALNUMBER COMMA SEMICOLON LPAREN RPAREN LBRACKET RBRACKET
-%token <TokenType> DOT COLON RANGE REVERSE IN NEWLINE WHITESPACE TAB UNKNOWN // Added IN token
+%token <TokenType> DOT COLON RANGE REVERSE IN NEWLINE WHITESPACE TAB UNKNOWN
 
 %start Program
 
+%union {
+    Token token;
+    ASTNode node;
+    List<ASTNode> nodes;
+}
+
 %%
 
-
 Program:
-      Declaration SEMICOLON
-    | Statement SEMICOLON
-    | Function SEMICOLON
+    { /* AST Root */ }
+    | Program SimpleDeclaration
+    | Program RoutineDeclaration
     ;
 
-Declaration:
-      VAR IDENTIFIER COLON Type IS Expression
-        { System.out.println("Variable declaration: " + $2); }
+SimpleDeclaration:
+    VariableDeclaration
+    | TypeDeclaration
+    ;
+
+VariableDeclaration:
+    VAR IDENTIFIER COLON Type IS Expression
+    | VAR IDENTIFIER IS Expression
+    ;
+
+TypeDeclaration:
+    TYPE IDENTIFIER IS Type
+    ;
+
+RoutineDeclaration:
+    ROUTINE IDENTIFIER LPAREN Parameters RPAREN IS Body END
+    ;
+
+Parameters:
+    ParameterDeclaration
+    | Parameters COMMA ParameterDeclaration
+    ;
+
+ParameterDeclaration:
+    IDENTIFIER COLON IDENTIFIER
     ;
 
 Type:
-      INTEGER
-    | BOOLEAN
+    PrimitiveType
+    | ArrayType
+    | RecordType
+    | IDENTIFIER
+    ;
+
+PrimitiveType:
+    INTEGER
     | REAL
-    | ARRAY LBRACKET INTEGERNUMBER RBRACKET Type
-        { System.out.println("Array type"); }
-    | RECORD Declaration END
-        { System.out.println("Record type"); }
+    | BOOLEAN
+    ;
+
+RecordType:
+    RECORD VariableDeclaration END
+    ;
+
+ArrayType:
+    ARRAY LBRACKET Expression RBRACKET Type
+    ;
+
+Body:
+    SimpleDeclaration
+    | Statement
+    | Body SimpleDeclaration
+    | Body Statement
     ;
 
 Statement:
-      IDENTIFIER ASSIGN Expression
-    | IF Expression THEN Statement ELSE Statement END
-        { System.out.println("If-else statement"); }
-    | WHILE Expression LOOP Statement END
-        { System.out.println("While loop"); }
-    | FOR IDENTIFIER IN Expression RANGE Expression LOOP Statement END
-        { System.out.println("For loop"); }
-    | RETURN Expression
-        { System.out.println("Return statement"); }
+    Assignment
+    | RoutineCall
+    | WhileLoop
+    | ForLoop
+    | IfStatement
+    ;
+
+Assignment:
+    ModifiablePrimary ASSIGN Expression
+    ;
+
+RoutineCall:
+    IDENTIFIER LPAREN Expression RPAREN
+    ;
+
+WhileLoop:
+    WHILE Expression LOOP Body END
+    ;
+
+ForLoop:
+    FOR IDENTIFIER Range LOOP Body END
+    ;
+
+Range:
+    IN Expression RANGE Expression
+    | IN REVERSE Expression RANGE Expression
+    ;
+
+IfStatement:
+    IF Expression THEN Body ELSE Body END
+    | IF Expression THEN Body END
     ;
 
 Expression:
-      Expression PLUS Expression
-    | Expression MINUS Expression
-    | Expression MUL Expression
-    | Expression DIV Expression
-    | Expression EQ Expression
-    | Expression GE Expression
-    | Expression GT Expression
-    | Expression LE Expression
-    | Expression LT Expression
-    | NOT Expression
-    | TRUE
-    | FALSE
-    | INTEGERNUMBER
-    | REALNUMBER
-    | IDENTIFIER
+    Relation
+    | Expression AND Relation
+    | Expression XOR Relation
+    | Expression OR Relation
+    ;
+
+Relation:
+    Simple
+    | Relation LT Simple
+    | Relation LE Simple
+    | Relation GT Simple
+    | Relation GE Simple
+    | Relation EQ Simple
+    | Relation NE Simple
+    ;
+
+Simple:
+    Factor
+    | Simple PLUS Factor
+    | Simple MINUS Factor
+    ;
+
+Factor:
+    Summand
+    | Factor MUL Summand
+    | Factor DIV Summand
+    | Factor MOD Summand
+    ;
+
+Summand:
+    Primary
     | LPAREN Expression RPAREN
     ;
 
-Function:
-      ROUTINE IDENTIFIER LPAREN RPAREN IS Declaration SEMICOLON Statement END
-        { System.out.println("Function definition: " + $2); }
+Primary:
+    INTEGERNUMBER
+    | REALNUMBER
+    | TRUE
+    | FALSE
+    | ModifiablePrimary
+    | NOT Primary
+    ;
+
+ModifiablePrimary:
+    IDENTIFIER
+    | ModifiablePrimary DOT IDENTIFIER
+    | ModifiablePrimary LBRACKET Expression RBRACKET
     ;
 
 %%
 
-// Add any additional helper functions or declarations here
