@@ -7,5 +7,10 @@ public enum TokenType {
     ASSIGN, LT, LE, GT, GE, EQ, NE, PLUS, MINUS, MUL, DIV, MOD, AND, OR, XOR, NOT,
     // Tokens
     IDENTIFIER, INTEGERNUMBER, REALNUMBER, COMMA, SEMICOLON, LPAREN, RPAREN, LBRACKET, RBRACKET,
-    DOT, COLON, RANGE, REVERSE, NEWLINE, WHITESPACE, TAB, UNKNOWN
+    DOT, COLON, RANGE, REVERSE, NEWLINE, WHITESPACE, TAB, UNKNOWN;
+
+    @Override
+    public String toString() {
+        return name().toLowerCase();
+    }
 }

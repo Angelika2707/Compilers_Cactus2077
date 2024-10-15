@@ -3,14 +3,21 @@ package main.lexer;
 import main.token.Token;
 import main.token.TokenType;
 
+import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Lexer {
+    private final ArrayList<Token> tokens;
+    private Iterator<Token> tokenIterator;
     private static final Pattern TOKEN_PATTERN = Pattern.compile(
             "\\bvar\\b|\\btype\\b|\\broutine\\b|\\breturn\\b|\\bis\\b|\\brecord\\b|\\barray\\b|\\bwhile\\b|\\bfor\\b|\\bloop\\b|\\breverse\\b|\\bif\\b|\\belse\\b|\\bthen\\b|\\bend\\b|\\btrue\\b|\\bfalse\\b|\\band\\b|\\bor\\b|\\bxor\\b|\\bnot\\b|\\binteger\\b|\\breal\\b|\\bboolean\\b|:=|<=|>=|<|>|=|/=|\\+|\\*|/|%|,|;|\\(|\\)|\\[|\\]|\\.\\.|\\.|:|\\d+[a-zA-Z_][a-zA-Z_0-9]*|\\d+(\\.\\d*)?|\\-?\\d+\\.\\d*|\\-?\\d+|[a-zA-Z_][a-zA-Z_0-9]*|-|\\n|\\t|\\s{4}|\\s|."
     );
+
+    public Lexer() {
+        this.tokens = new ArrayList<>();
+    }
 
     private TokenType getTokenType(String tokenText) {
         switch (tokenText) {
@@ -71,8 +78,8 @@ public class Lexer {
         }
     }
 
-    public ArrayList<Token> tokenize(String input) {
-        ArrayList<Token> tokens = new ArrayList<>();
+    public void tokenize(String input) {
+        tokens.clear();
         Matcher matcher = TOKEN_PATTERN.matcher(input);
 
         int line = 1;
@@ -80,6 +87,11 @@ public class Lexer {
 
         while (matcher.find()) {
             String tokenText = matcher.group();
+
+            if (tokenText.matches("\\s+") || tokenText.equals("\t") || tokenText.equals("\n") || tokenText.equals("\\s{4}")) {
+                continue;
+            }
+
             TokenType tokenType = getTokenType(tokenText);
 
             tokens.add(new Token(tokenType, tokenText, line, pos));
@@ -92,6 +104,27 @@ public class Lexer {
             }
         }
 
-        return tokens;
+        tokenIterator = tokens.iterator();
+    }
+
+    public Token yylex() {
+        if (tokenIterator != null && tokenIterator.hasNext()) {
+            return tokenIterator.next();
+        }
+        return null;
+    }
+
+    public void yyerror(String message) {
+        System.err.println("Lexer error: " + message);
+    }
+
+    public int getLVal() {
+        if (tokenIterator != null && tokenIterator.hasNext()) {
+            Token lastToken = tokens.get(tokens.size() - 1);
+            if (lastToken.getType() == TokenType.INTEGERNUMBER) {
+                return lastToken.getIntegerValue();
+            }
+        }
+        return 0;
     }
 }
