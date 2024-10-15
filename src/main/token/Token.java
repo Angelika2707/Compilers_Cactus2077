@@ -44,6 +44,20 @@ public class Token {
         return value;
     }
 
+    public Integer getIntegerValue() {
+        if (type == TokenType.INTEGERNUMBER) {
+            return (Integer) value;
+        }
+        return null;
+    }
+
+    public Double getRealValue() {
+        if (type == TokenType.REALNUMBER) {
+            return (Double) value;
+        }
+        return null;
+    }
+
     @Override
     public String toString() {
         return String.format("[%s \"%s\" (l=%d, p=%d)]\s", type, text, line, pos);
