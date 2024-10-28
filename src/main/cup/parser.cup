@@ -1,0 +1,117 @@
+package parser;
+
+/* parser.cup - Grammar specification for the custom language */
+import java_cup.runtime.*;
+
+terminal VAR, TYPE, INTEGER, BOOLEAN, REAL, ARRAY, RECORD, TRUE, FALSE, IS;
+terminal IF, THEN, ELSE, END, FOR, IN, REVERSE, LOOP, WHILE, ROUTINE, RETURN;
+terminal PLUS, MINUS, MUL, DIV, MOD, ASSIGN, EQ, NE, GT, LT, GE, LE;
+terminal AND, OR, XOR, NOT;
+terminal LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, DOT, RANGE, COLON, SEMICOLON;
+terminal String IDENTIFIER;
+terminal Integer INTEGERNUM;
+terminal Double REALNUM;
+
+non terminal Program;
+non terminal ProgramUnit;
+non terminal DeclarationList;
+non terminal Declaration;
+non terminal VariableDeclaration;
+non terminal TypeDeclaration;
+non terminal Statement;
+non terminal Expression;
+non terminal Type;
+non terminal Function;
+non terminal ParamList;
+non terminal ParamListNonEmpty;
+non terminal ReturnTypeOpt;
+non terminal FunctionBody;
+
+/* Define precedences */
+precedence left OR, AND, XOR;
+precedence left EQ, NE, LT, GT, LE, GE;
+precedence left PLUS, MINUS;
+precedence left MUL, DIV, MOD;
+precedence right NOT;
+
+/* Grammar rules */
+Program ::= Program ProgramUnit
+               | /* empty */ ;
+
+ProgramUnit ::= Declaration
+              | Statement
+              | Function;
+
+DeclarationList ::= Declaration DeclarationList
+                 | /* empty */;
+
+Declaration ::= VariableDeclaration
+              | TypeDeclaration;
+
+VariableDeclaration ::= VAR IDENTIFIER:id COLON Type SEMICOLON {: System.out.println("Variable declaration with type only: " + id); :}
+                      | VAR IDENTIFIER:id COLON Type IS Expression SEMICOLON {: System.out.println("Variable declaration with type spec. and type: " + id); :}
+                      | VAR IDENTIFIER:id IS Expression SEMICOLON {: System.out.println("Variable declaration without type spec. and type: " + id); :};
+
+TypeDeclaration ::= TYPE IDENTIFIER:id IS Type SEMICOLON {: System.out.println("Type declaration: " + id); :};
+
+Type ::= INTEGER
+       | BOOLEAN
+       | REAL
+       | IDENTIFIER
+       | ARRAY LBRACKET INTEGERNUM RBRACKET Type
+         {: System.out.println("Array type"); :}
+       | RECORD DeclarationList END
+         {: System.out.println("Record type"); :};
+
+Statement ::= IDENTIFIER ASSIGN Expression SEMICOLON
+            | IDENTIFIER LBRACKET Expression RBRACKET ASSIGN Expression SEMICOLON
+            | IDENTIFIER DOT IDENTIFIER ASSIGN Expression SEMICOLON
+            | IF Expression THEN Statement ELSE Statement END SEMICOLON
+              {: System.out.println("If-else statement"); :}
+            | WHILE Expression LOOP Statement END SEMICOLON
+              {: System.out.println("While loop"); :}
+            | FOR IDENTIFIER IN Expression RANGE Expression LOOP Statement END SEMICOLON
+              {: System.out.println("For loop"); :}
+            | FOR IDENTIFIER IN REVERSE Expression RANGE Expression LOOP Statement END SEMICOLON
+              {: System.out.println("For loop reverse"); :}
+            | RETURN Expression SEMICOLON
+              {: System.out.println("Return statement"); :};
+
+Expression ::= Expression PLUS Expression
+             | Expression MINUS Expression
+             | Expression MUL Expression
+             | Expression DIV Expression
+             | Expression MOD Expression
+             | Expression EQ Expression
+             | Expression NE Expression
+             | Expression GT Expression
+             | Expression LT Expression
+             | Expression GE Expression
+             | Expression LE Expression
+             | Expression AND Expression
+             | Expression OR Expression
+             | Expression XOR Expression
+             | NOT Expression
+             | TRUE
+             | FALSE
+             | INTEGERNUM
+             | REALNUM
+             | IDENTIFIER
+             | IDENTIFIER LBRACKET Expression RBRACKET
+             | IDENTIFIER DOT IDENTIFIER
+             | LPAREN Expression RPAREN;
+
+Function ::= ROUTINE IDENTIFIER:id LPAREN ParamList RPAREN ReturnTypeOpt IS FunctionBody END SEMICOLON
+            {: System.out.println("Function definition: " + id); :};
+
+ParamList ::= /* empty */
+            | ParamListNonEmpty;
+
+ParamListNonEmpty ::= IDENTIFIER COLON Type
+                    | ParamListNonEmpty COMMA IDENTIFIER COLON Type;
+
+ReturnTypeOpt ::= COLON Type
+                | /* empty */;
+
+FunctionBody ::= Declaration SEMICOLON Statement
+               | Statement;
