@@ -1,6 +1,5 @@
 package parser;
 
-/* parser.cup - Grammar specification for the custom language */
 import java_cup.runtime.*;
 
 terminal VAR, TYPE, INTEGER, BOOLEAN, REAL, ARRAY, RECORD, TRUE, FALSE, IS;
@@ -19,13 +18,14 @@ non terminal Declaration;
 non terminal VariableDeclaration;
 non terminal TypeDeclaration;
 non terminal Statement;
+non terminal StatementList;
 non terminal Expression;
 non terminal Type;
 non terminal Function;
 non terminal ParamList;
 non terminal ParamListNonEmpty;
 non terminal ReturnTypeOpt;
-non terminal FunctionBody;
+non terminal NestedRecordAccess;
 
 /* Define precedences */
 precedence left OR, AND, XOR;
@@ -63,16 +63,20 @@ Type ::= INTEGER
        | RECORD DeclarationList END
          {: System.out.println("Record type"); :};
 
+StatementList ::= Statement StatementList
+                | /* empty */;
+
 Statement ::= IDENTIFIER ASSIGN Expression SEMICOLON
             | IDENTIFIER LBRACKET Expression RBRACKET ASSIGN Expression SEMICOLON
-            | IDENTIFIER DOT IDENTIFIER ASSIGN Expression SEMICOLON
-            | IF Expression THEN Statement ELSE Statement END SEMICOLON
+            | NestedRecordAccess DOT IDENTIFIER ASSIGN Expression SEMICOLON
+            | IDENTIFIER LPAREN ParamList RPAREN SEMICOLON
+            | IF Expression THEN DeclarationList StatementList ELSE DeclarationList StatementList END SEMICOLON
               {: System.out.println("If-else statement"); :}
-            | WHILE Expression LOOP Statement END SEMICOLON
+            | WHILE Expression LOOP DeclarationList StatementList END SEMICOLON
               {: System.out.println("While loop"); :}
-            | FOR IDENTIFIER IN Expression RANGE Expression LOOP Statement END SEMICOLON
+            | FOR IDENTIFIER IN Expression RANGE Expression LOOP DeclarationList StatementList END SEMICOLON
               {: System.out.println("For loop"); :}
-            | FOR IDENTIFIER IN REVERSE Expression RANGE Expression LOOP Statement END SEMICOLON
+            | FOR IDENTIFIER IN REVERSE Expression RANGE Expression LOOP DeclarationList StatementList END SEMICOLON
               {: System.out.println("For loop reverse"); :}
             | RETURN Expression SEMICOLON
               {: System.out.println("Return statement"); :};
@@ -96,22 +100,24 @@ Expression ::= Expression PLUS Expression
              | FALSE
              | INTEGERNUM
              | REALNUM
-             | IDENTIFIER
              | IDENTIFIER LBRACKET Expression RBRACKET
-             | IDENTIFIER DOT IDENTIFIER
-             | LPAREN Expression RPAREN;
+             | IDENTIFIER LPAREN ParamList RPAREN
+             | LPAREN Expression RPAREN
+             | NestedRecordAccess;
 
-Function ::= ROUTINE IDENTIFIER:id LPAREN ParamList RPAREN ReturnTypeOpt IS FunctionBody END SEMICOLON
+NestedRecordAccess ::= IDENTIFIER
+             | NestedRecordAccess DOT IDENTIFIER;
+
+Function ::= ROUTINE IDENTIFIER:id LPAREN ParamList RPAREN ReturnTypeOpt IS DeclarationList StatementList END SEMICOLON
             {: System.out.println("Function definition: " + id); :};
 
 ParamList ::= /* empty */
             | ParamListNonEmpty;
 
-ParamListNonEmpty ::= IDENTIFIER COLON Type
+ParamListNonEmpty ::= Expression
+                    | ParamListNonEmpty COMMA Expression
+                    | IDENTIFIER COLON Type
                     | ParamListNonEmpty COMMA IDENTIFIER COLON Type;
 
 ReturnTypeOpt ::= COLON Type
                 | /* empty */;
-
-FunctionBody ::= Declaration SEMICOLON Statement
-               | Statement;

@@ -33,14 +33,13 @@ REALNUM     = "-"?{DIGIT}+"."{DIGIT}+
 WHITESPACE  = [ \t\n\r]+
 COMMENT     = "//" [^\n]*
 
-/* Regular expression rules */
+/* Regex rules */
 %%
 
-/* Skip whitespaces */
-{WHITESPACE} { /* Ignore whitespaces */ }
-
-/* Comments */
-{COMMENT}    { /* Ignore comments */ }
+/* Ignore whitespaces */
+{WHITESPACE} {  }
+/* Ignore comments */
+{COMMENT}    {  }
 
 /* Keywords */
 "var"        { System.out.printf("VAR at [%d, %d]%n", yyline, yycolumn); return symbol(sym.VAR); }
@@ -94,7 +93,7 @@ COMMENT     = "//" [^\n]*
 ":"          { System.out.printf("COLON at [%d, %d]%n", yyline, yycolumn); return symbol(sym.COLON); }
 ";"          { System.out.printf("SEMICOLON at [%d, %d]%n", yyline, yycolumn); return symbol(sym.SEMICOLON); }
 
-/* Identifiers */
+/* Identifier */
 {IDENTIFIER} { System.out.printf("IDENTIFIER: %s at [%d, %d]%n", yytext(), yyline, yycolumn); return symbol(sym.IDENTIFIER, yytext()); }
 
 /* Numbers */

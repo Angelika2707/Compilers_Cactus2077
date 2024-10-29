@@ -99,13 +99,13 @@ public class Lexer implements java_cup.runtime.Scanner {
   private static final String ZZ_ACTION_PACKED_0 =
     "\1\0\1\1\1\2\1\3\1\4\1\5\1\6\1\7"+
     "\1\10\1\11\1\12\1\13\1\14\1\15\1\16\1\17"+
-    "\1\20\1\21\1\22\1\23\15\21\1\24\1\25\1\26"+
-    "\1\0\1\27\1\30\1\31\7\21\1\32\1\33\1\34"+
-    "\2\21\1\35\10\21\1\36\1\37\3\21\1\40\1\21"+
-    "\1\41\2\21\1\42\10\21\1\43\1\21\1\44\2\21"+
-    "\1\45\2\21\1\46\1\47\4\21\1\50\1\51\1\52"+
-    "\1\21\1\53\1\21\1\54\5\21\1\55\2\21\1\56"+
-    "\1\57\2\21\1\60\1\61\1\62\1\63";
+    "\1\20\1\21\1\22\1\23\15\21\1\24\1\1\1\25"+
+    "\1\0\1\26\1\27\1\30\7\21\1\31\1\32\1\33"+
+    "\2\21\1\34\10\21\1\35\1\36\3\21\1\37\1\21"+
+    "\1\40\2\21\1\41\10\21\1\42\1\21\1\43\2\21"+
+    "\1\44\2\21\1\45\1\46\4\21\1\47\1\50\1\51"+
+    "\1\21\1\52\1\21\1\53\5\21\1\54\2\21\1\55"+
+    "\1\56\2\21\1\57\1\60\1\61\1\62";
 
   private static int [] zzUnpackAction() {
     int [] result = new int[117];
@@ -810,260 +810,255 @@ public class Lexer implements java_cup.runtime.Scanner {
       else {
         switch (zzAction < 0 ? zzAction : ZZ_ACTION[zzAction]) {
           case 1:
-            { /* Ignore whitespaces */
+            { 
             }
           // fall through
-          case 52: break;
+          case 51: break;
           case 2:
             { System.out.printf("MOD at [%d, %d]%n", yyline, yycolumn); return symbol(sym.MOD);
             }
           // fall through
-          case 53: break;
+          case 52: break;
           case 3:
             { System.out.printf("OPEN PAREN at [%d, %d]%n", yyline, yycolumn); return symbol(sym.LPAREN);
             }
           // fall through
-          case 54: break;
+          case 53: break;
           case 4:
             { System.out.printf("CLOSE PAREN at [%d, %d]%n", yyline, yycolumn); return symbol(sym.RPAREN);
             }
           // fall through
-          case 55: break;
+          case 54: break;
           case 5:
             { System.out.printf("MUL at [%d, %d]%n", yyline, yycolumn); return symbol(sym.MUL);
             }
           // fall through
-          case 56: break;
+          case 55: break;
           case 6:
             { System.out.printf("PLUS at [%d, %d]%n", yyline, yycolumn); return symbol(sym.PLUS);
             }
           // fall through
-          case 57: break;
+          case 56: break;
           case 7:
             { System.out.printf("COMMA at [%d, %d]%n", yyline, yycolumn); return symbol(sym.COMMA);
             }
           // fall through
-          case 58: break;
+          case 57: break;
           case 8:
             { System.out.printf("MINUS at [%d, %d]%n", yyline, yycolumn); return symbol(sym.MINUS);
             }
           // fall through
-          case 59: break;
+          case 58: break;
           case 9:
             { System.out.printf("DOT at [%d, %d]%n", yyline, yycolumn); return symbol(sym.DOT);
             }
           // fall through
-          case 60: break;
+          case 59: break;
           case 10:
             { System.out.printf("DIV at [%d, %d]%n", yyline, yycolumn); return symbol(sym.DIV);
             }
           // fall through
-          case 61: break;
+          case 60: break;
           case 11:
             { System.out.printf("INTEGERNUM: %s at [%d, %d]%n", yytext(), yyline, yycolumn); return symbol(sym.INTEGERNUM, Integer.parseInt(yytext()));
             }
           // fall through
-          case 62: break;
+          case 61: break;
           case 12:
             { System.out.printf("COLON at [%d, %d]%n", yyline, yycolumn); return symbol(sym.COLON);
             }
           // fall through
-          case 63: break;
+          case 62: break;
           case 13:
             { System.out.printf("SEMICOLON at [%d, %d]%n", yyline, yycolumn); return symbol(sym.SEMICOLON);
             }
           // fall through
-          case 64: break;
+          case 63: break;
           case 14:
             { System.out.printf("LT at [%d, %d]%n", yyline, yycolumn); return symbol(sym.LT);
             }
           // fall through
-          case 65: break;
+          case 64: break;
           case 15:
             { System.out.printf("EQ at [%d, %d]%n", yyline, yycolumn); return symbol(sym.EQ);
             }
           // fall through
-          case 66: break;
+          case 65: break;
           case 16:
             { System.out.printf("GT at [%d, %d]%n", yyline, yycolumn); return symbol(sym.GT);
             }
           // fall through
-          case 67: break;
+          case 66: break;
           case 17:
             { System.out.printf("IDENTIFIER: %s at [%d, %d]%n", yytext(), yyline, yycolumn); return symbol(sym.IDENTIFIER, yytext());
             }
           // fall through
-          case 68: break;
+          case 67: break;
           case 18:
             { System.out.printf("OPEN BRACKET at [%d, %d]%n", yyline, yycolumn); return symbol(sym.LBRACKET);
             }
           // fall through
-          case 69: break;
+          case 68: break;
           case 19:
             { System.out.printf("CLOSE BRACKET at [%d, %d]%n", yyline, yycolumn); return symbol(sym.RBRACKET);
             }
           // fall through
-          case 70: break;
+          case 69: break;
           case 20:
             { System.out.printf("RANGE at [%d, %d]%n", yyline, yycolumn); return symbol(sym.RANGE);
             }
           // fall through
-          case 71: break;
+          case 70: break;
           case 21:
-            { /* Ignore comments */
-            }
-          // fall through
-          case 72: break;
-          case 22:
             { System.out.printf("NE at [%d, %d]%n", yyline, yycolumn); return symbol(sym.NE);
             }
           // fall through
-          case 73: break;
-          case 23:
+          case 71: break;
+          case 22:
             { System.out.printf("ASSIGN at [%d, %d]%n", yyline, yycolumn); return symbol(sym.ASSIGN);
             }
           // fall through
-          case 74: break;
-          case 24:
+          case 72: break;
+          case 23:
             { System.out.printf("LE at [%d, %d]%n", yyline, yycolumn); return symbol(sym.LE);
             }
           // fall through
-          case 75: break;
-          case 25:
+          case 73: break;
+          case 24:
             { System.out.printf("GE at [%d, %d]%n", yyline, yycolumn); return symbol(sym.GE);
             }
           // fall through
-          case 76: break;
-          case 26:
+          case 74: break;
+          case 25:
             { System.out.printf("IF at [%d, %d]%n", yyline, yycolumn); return symbol(sym.IF);
             }
           // fall through
-          case 77: break;
-          case 27:
+          case 75: break;
+          case 26:
             { System.out.printf("IN at [%d, %d]%n", yyline, yycolumn); return symbol(sym.IN);
             }
           // fall through
-          case 78: break;
-          case 28:
+          case 76: break;
+          case 27:
             { System.out.printf("IS at [%d, %d]%n", yyline, yycolumn); return symbol(sym.IS);
             }
           // fall through
-          case 79: break;
-          case 29:
+          case 77: break;
+          case 28:
             { System.out.printf("OR at [%d, %d]%n", yyline, yycolumn); return symbol(sym.OR);
             }
           // fall through
-          case 80: break;
-          case 30:
+          case 78: break;
+          case 29:
             { System.out.printf("REALNUM: %s at [%d, %d]%n", yytext(), yyline, yycolumn); return symbol(sym.REALNUM, Double.parseDouble(yytext()));
             }
           // fall through
-          case 81: break;
-          case 31:
+          case 79: break;
+          case 30:
             { System.out.printf("AND at [%d, %d]%n", yyline, yycolumn); return symbol(sym.AND);
             }
           // fall through
-          case 82: break;
-          case 32:
+          case 80: break;
+          case 31:
             { System.out.printf("END at [%d, %d]%n", yyline, yycolumn); return symbol(sym.END);
             }
           // fall through
-          case 83: break;
-          case 33:
+          case 81: break;
+          case 32:
             { System.out.printf("FOR at [%d, %d]%n", yyline, yycolumn); return symbol(sym.FOR);
             }
           // fall through
-          case 84: break;
-          case 34:
+          case 82: break;
+          case 33:
             { System.out.printf("NOT at [%d, %d]%n", yyline, yycolumn); return symbol(sym.NOT);
             }
           // fall through
-          case 85: break;
-          case 35:
+          case 83: break;
+          case 34:
             { System.out.printf("VAR at [%d, %d]%n", yyline, yycolumn); return symbol(sym.VAR);
             }
           // fall through
-          case 86: break;
-          case 36:
+          case 84: break;
+          case 35:
             { System.out.printf("XOR at [%d, %d]%n", yyline, yycolumn); return symbol(sym.XOR);
             }
           // fall through
-          case 87: break;
-          case 37:
+          case 85: break;
+          case 36:
             { System.out.printf("ELSE at [%d, %d]%n", yyline, yycolumn); return symbol(sym.ELSE);
             }
           // fall through
-          case 88: break;
-          case 38:
+          case 86: break;
+          case 37:
             { System.out.printf("LOOP at [%d, %d]%n", yyline, yycolumn); return symbol(sym.LOOP);
             }
           // fall through
-          case 89: break;
-          case 39:
+          case 87: break;
+          case 38:
             { System.out.printf("REAL at [%d, %d]%n", yyline, yycolumn); return symbol(sym.REAL);
             }
           // fall through
-          case 90: break;
-          case 40:
+          case 88: break;
+          case 39:
             { System.out.printf("THEN at [%d, %d]%n", yyline, yycolumn); return symbol(sym.THEN);
             }
           // fall through
-          case 91: break;
-          case 41:
+          case 89: break;
+          case 40:
             { System.out.printf("TRUE at [%d, %d]%n", yyline, yycolumn); return symbol(sym.TRUE);
             }
           // fall through
-          case 92: break;
-          case 42:
+          case 90: break;
+          case 41:
             { System.out.printf("TYPE at [%d, %d]%n", yyline, yycolumn); return symbol(sym.TYPE);
             }
           // fall through
-          case 93: break;
-          case 43:
+          case 91: break;
+          case 42:
             { System.out.printf("ARRAY at [%d, %d]%n", yyline, yycolumn); return symbol(sym.ARRAY);
             }
           // fall through
-          case 94: break;
-          case 44:
+          case 92: break;
+          case 43:
             { System.out.printf("FALSE at [%d, %d]%n", yyline, yycolumn); return symbol(sym.FALSE);
             }
           // fall through
-          case 95: break;
-          case 45:
+          case 93: break;
+          case 44:
             { System.out.printf("WHILE at [%d, %d]%n", yyline, yycolumn); return symbol(sym.WHILE);
             }
           // fall through
-          case 96: break;
-          case 46:
+          case 94: break;
+          case 45:
             { System.out.printf("RECORD at [%d, %d]%n", yyline, yycolumn); return symbol(sym.RECORD);
             }
           // fall through
-          case 97: break;
-          case 47:
+          case 95: break;
+          case 46:
             { System.out.printf("RETURN at [%d, %d]%n", yyline, yycolumn); return symbol(sym.RETURN);
             }
           // fall through
-          case 98: break;
-          case 48:
+          case 96: break;
+          case 47:
             { System.out.printf("BOOLEAN at [%d, %d]%n", yyline, yycolumn); return symbol(sym.BOOLEAN);
             }
           // fall through
-          case 99: break;
-          case 49:
+          case 97: break;
+          case 48:
             { System.out.printf("INTEGER at [%d, %d]%n", yyline, yycolumn); return symbol(sym.INTEGER);
             }
           // fall through
-          case 100: break;
-          case 50:
+          case 98: break;
+          case 49:
             { System.out.printf("REVERSE at [%d, %d]%n", yyline, yycolumn); return symbol(sym.REVERSE);
             }
           // fall through
-          case 101: break;
-          case 51:
+          case 99: break;
+          case 50:
             { System.out.printf("ROUTINE at [%d, %d]%n", yyline, yycolumn); return symbol(sym.ROUTINE);
             }
           // fall through
-          case 102: break;
+          case 100: break;
           default:
             zzScanError(ZZ_NO_MATCH);
         }
