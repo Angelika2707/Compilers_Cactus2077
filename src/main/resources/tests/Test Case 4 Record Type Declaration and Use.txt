@@ -1,0 +1,8 @@
+type Person is record
+    var isOld : boolean;
+    var age : integer;
+end;
+
+var p : Person;
+p.isOld := false;
+p.age := 30;

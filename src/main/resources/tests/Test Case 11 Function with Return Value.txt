@@ -1,0 +1,6 @@
+routine add(a : integer, b : integer) : integer is
+    return a + b;
+end;
+
+var result : integer;
+result := add(3, 4);

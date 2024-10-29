@@ -1,0 +1,14 @@
+type Address is record
+    var streetCode : integer;
+    var cityCode : integer;
+end;
+
+type Person is record
+    var year : integer;
+    var address : Address;
+end;
+
+var p : Person;
+p.year := 22;
+p.address.streetCode := 126;
+p.address.cityCode := 202;

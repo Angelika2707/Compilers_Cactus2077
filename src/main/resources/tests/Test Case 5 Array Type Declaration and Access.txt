@@ -1,0 +1,5 @@
+type IntArray is array [10] integer;
+var arr : IntArray;
+arr[1] := 42;
+var value : integer;
+value := arr[1];

@@ -1,0 +1,4 @@
+var count : integer is 5;
+while count > 0 loop
+    count := count - 1;
+end;

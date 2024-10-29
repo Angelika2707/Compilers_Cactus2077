@@ -1,0 +1,4 @@
+var total : integer is 0;
+for i in reverse 1..5 loop
+    total := total + i;
+end;
