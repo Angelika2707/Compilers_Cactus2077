@@ -1,0 +1,12 @@
+var a : integer is -5;
+var b : real is -10.75;
+
+routine addNegativeNumbers(x : integer, y : real) : real is
+    var sum : real;
+    sum := x + y;
+end;
+
+routine main() is
+    var result : real;
+    result := addNegativeNumbers(a, b);
+end;

@@ -1,6 +1,14 @@
 package parser;
 
 import java_cup.runtime.*;
+import ast.base.*;
+import ast.declaration.*;
+import ast.expression.*;
+import ast.function.*;
+import ast.statement.*;
+import ast.type.*;
+import java.util.List;
+import java.util.ArrayList;
 
 terminal VAR, TYPE, INTEGER, BOOLEAN, REAL, ARRAY, RECORD, TRUE, FALSE, IS;
 terminal IF, THEN, ELSE, END, FOR, IN, REVERSE, LOOP, WHILE, ROUTINE, RETURN;
@@ -26,6 +34,7 @@ non terminal ParamList;
 non terminal ParamListNonEmpty;
 non terminal ReturnTypeOpt;
 non terminal NestedRecordAccess;
+non terminal ProgramUnits;
 
 /* Define precedences */
 precedence left OR, AND, XOR;
@@ -34,23 +43,37 @@ precedence left PLUS, MINUS;
 precedence left MUL, DIV, MOD;
 precedence right NOT;
 
+
 /* Grammar rules */
-Program ::= Program ProgramUnit
-               | /* empty */ ;
+Program ::= ProgramUnits:units {:
+                RESULT = new Program((List<ProgramUnit>) units);
+            :};
 
-ProgramUnit ::= Declaration
-              | Statement
-              | Function;
+ProgramUnits ::= ProgramUnits:units ProgramUnit:unit {:
+                    ((List<ProgramUnit>) units).add((ProgramUnit) unit);
+                    RESULT = units;
+                :}
+               | /* empty */ {: RESULT = new ArrayList<ProgramUnit>(); :};
 
-DeclarationList ::= Declaration DeclarationList
-                 | /* empty */;
+ProgramUnit ::= Declaration:decl {: RESULT = decl; :}
+              | Statement:stmt {: RESULT = stmt; :}
+              | Function:function {: RESULT = function; :};
 
-Declaration ::= VariableDeclaration
-              | TypeDeclaration;
+DeclarationList ::= Declaration:decl DeclarationList:list
+                 {:
+                    List<Declaration> decls = new ArrayList<>();
+                    decls.add((Declaration) decl);
+                    decls.addAll((List<Declaration>) list);
+                    RESULT = decls;
+                  :}
+                 | /* empty */ {: RESULT = new ArrayList<Declaration>(); :};
 
-VariableDeclaration ::= VAR IDENTIFIER:id COLON Type SEMICOLON {: System.out.println("Variable declaration with type only: " + id); :}
-                      | VAR IDENTIFIER:id COLON Type IS Expression SEMICOLON {: System.out.println("Variable declaration with type spec. and type: " + id); :}
-                      | VAR IDENTIFIER:id IS Expression SEMICOLON {: System.out.println("Variable declaration without type spec. and type: " + id); :};
+Declaration ::= VariableDeclaration:varDecl {: RESULT = varDecl; :}
+              | TypeDeclaration:typeDecl {: RESULT = typeDecl; :};
+
+VariableDeclaration ::= VAR IDENTIFIER:id COLON Type:type SEMICOLON {: RESULT = new VariableDeclaration((String) id, (Type) type, null); :}
+                      | VAR IDENTIFIER:id COLON Type:type IS Expression SEMICOLON {: RESULT = new VariableDeclaration((String) id, (Type) type, null); :}
+                      | VAR IDENTIFIER:id IS Expression:expr SEMICOLON {: RESULT = new VariableDeclaration((String) id, null, null); :};
 
 TypeDeclaration ::= TYPE IDENTIFIER:id IS Type SEMICOLON {: System.out.println("Type declaration: " + id); :};
 
