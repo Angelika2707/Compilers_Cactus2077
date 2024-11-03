@@ -77,14 +77,12 @@ VariableDeclaration ::= VAR IDENTIFIER:id COLON Type:type SEMICOLON {: RESULT = 
 
 TypeDeclaration ::= TYPE IDENTIFIER:id IS Type SEMICOLON {: System.out.println("Type declaration: " + id); :};
 
-Type ::= INTEGER
-       | BOOLEAN
-       | REAL
-       | IDENTIFIER
-       | ARRAY LBRACKET INTEGERNUM RBRACKET Type
-         {: System.out.println("Array type"); :}
-       | RECORD DeclarationList END
-         {: System.out.println("Record type"); :};
+Type ::= INTEGER {: RESULT = new IntegerType(); :}
+       | BOOLEAN {: RESULT = new BooleanType(); :}
+       | REAL {: RESULT = new RealType(); :}
+       | IDENTIFIER:id {: RESULT = new IdentifierType((String) id); :}
+       | ARRAY LBRACKET INTEGERNUM:size RBRACKET Type:elemType {: new ArrayType((Integer) size, (Type) elemType); :}
+       | RECORD DeclarationList:fields END {: RESULT = new RecordType((List<Declaration>) fields); :};
 
 StatementList ::= Statement StatementList
                 | /* empty */;
