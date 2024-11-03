@@ -1,21 +1,33 @@
 package ast.declaration;
 
-import ast.base.ASTNode;
-import ast.base.ProgramUnit;
 import ast.expression.Expression;
 import ast.type.Type;
 import ast.visitor.Visitor;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 public class VariableDeclaration extends Declaration {
-    private String id;
-    private Type type;
-    private Expression expression;
+    private final String id;
+    private final Type type;
+    private final Expression expression;
+
+    public VariableDeclaration(String id, Type type, Expression expression) {
+        this.id = id;
+        this.type = type;
+        this.expression = expression;
+    }
+
+    public VariableDeclaration(String id, Type type) {
+        this.id = id;
+        this.type = type;
+        this.expression = null;
+    }
+
+    public VariableDeclaration(String id, Expression expression) {
+        this.id = id;
+        this.type = null;
+        this.expression = expression;
+    }
 
     @Override
     public void accept(Visitor visitor) {

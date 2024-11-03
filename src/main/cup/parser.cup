@@ -71,11 +71,11 @@ DeclarationList ::= Declaration:decl DeclarationList:list
 Declaration ::= VariableDeclaration:varDecl {: RESULT = varDecl; :}
               | TypeDeclaration:typeDecl {: RESULT = typeDecl; :};
 
-VariableDeclaration ::= VAR IDENTIFIER:id COLON Type:type SEMICOLON {: RESULT = new VariableDeclaration((String) id, (Type) type, null); :}
-                      | VAR IDENTIFIER:id COLON Type:type IS Expression SEMICOLON {: RESULT = new VariableDeclaration((String) id, (Type) type, null); :}
-                      | VAR IDENTIFIER:id IS Expression:expr SEMICOLON {: RESULT = new VariableDeclaration((String) id, null, null); :};
+VariableDeclaration ::= VAR IDENTIFIER:id COLON Type:type SEMICOLON {: RESULT = new VariableDeclaration((String) id, (Type) type); :}
+                      | VAR IDENTIFIER:id COLON Type:type IS Expression:expr SEMICOLON {: RESULT = new VariableDeclaration((String) id, (Type) type, (Expression) expr); :}
+                      | VAR IDENTIFIER:id IS Expression:expr SEMICOLON {: RESULT = new VariableDeclaration((String) id, (Expression) expr); :};
 
-TypeDeclaration ::= TYPE IDENTIFIER:id IS Type SEMICOLON {: System.out.println("Type declaration: " + id); :};
+TypeDeclaration ::= TYPE IDENTIFIER:id IS Type:type SEMICOLON {: RESULT = new TypeDeclaration((String) id, (Type) type); :};
 
 Type ::= INTEGER {: RESULT = new IntegerType(); :}
        | BOOLEAN {: RESULT = new BooleanType(); :}
@@ -91,6 +91,8 @@ Statement ::= IDENTIFIER ASSIGN Expression SEMICOLON
             | IDENTIFIER LBRACKET Expression RBRACKET ASSIGN Expression SEMICOLON
             | NestedRecordAccess DOT IDENTIFIER ASSIGN Expression SEMICOLON
             | IDENTIFIER LPAREN ParamList RPAREN SEMICOLON
+            | IF Expression THEN DeclarationList StatementList END SEMICOLON
+              {: System.out.println("If statement"); :}
             | IF Expression THEN DeclarationList StatementList ELSE DeclarationList StatementList END SEMICOLON
               {: System.out.println("If-else statement"); :}
             | WHILE Expression LOOP DeclarationList StatementList END SEMICOLON
