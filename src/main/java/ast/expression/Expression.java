@@ -1,8 +1,7 @@
 package ast.expression;
 
 import ast.base.ASTNode;
-import ast.visitor.Visitor;
+import lombok.Getter;
 
-public abstract class Expression extends ASTNode {
-    public abstract void accept(Visitor visitor);
-}
+@Getter
+public abstract class Expression extends ASTNode {}

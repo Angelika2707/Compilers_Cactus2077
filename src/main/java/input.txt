@@ -1,4 +1,6 @@
-type MyInteger is integer;
-var a : MyInteger is 100;
-var b : MyInteger;
-b := a;
+var x : integer is 10;
+if x > 5 then
+    x := x + 1;
+else
+    x := x - 1;
+end;

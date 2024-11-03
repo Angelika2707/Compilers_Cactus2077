@@ -84,25 +84,35 @@ Type ::= INTEGER {: RESULT = new IntegerType(); :}
        | ARRAY LBRACKET INTEGERNUM:size RBRACKET Type:elemType {: new ArrayType((Integer) size, (Type) elemType); :}
        | RECORD DeclarationList:fields END {: RESULT = new RecordType((List<Declaration>) fields); :};
 
-StatementList ::= Statement StatementList
-                | /* empty */;
+StatementList ::= Statement:statement StatementList:list
+                {:
+                    List<Statement> statements = new ArrayList<>();
+                    statements.add((Statement) statement);
+                    statements.addAll((List<Statement>) list);
+                    RESULT = statements;
+                :}
+                | /* empty */ {: RESULT = new ArrayList<Statement>(); :};
 
-Statement ::= IDENTIFIER ASSIGN Expression SEMICOLON
-            | IDENTIFIER LBRACKET Expression RBRACKET ASSIGN Expression SEMICOLON
-            | NestedRecordAccess DOT IDENTIFIER ASSIGN Expression SEMICOLON
-            | IDENTIFIER LPAREN ParamList RPAREN SEMICOLON
-            | IF Expression THEN DeclarationList StatementList END SEMICOLON
-              {: System.out.println("If statement"); :}
-            | IF Expression THEN DeclarationList StatementList ELSE DeclarationList StatementList END SEMICOLON
-              {: System.out.println("If-else statement"); :}
-            | WHILE Expression LOOP DeclarationList StatementList END SEMICOLON
-              {: System.out.println("While loop"); :}
-            | FOR IDENTIFIER IN Expression RANGE Expression LOOP DeclarationList StatementList END SEMICOLON
-              {: System.out.println("For loop"); :}
-            | FOR IDENTIFIER IN REVERSE Expression RANGE Expression LOOP DeclarationList StatementList END SEMICOLON
-              {: System.out.println("For loop reverse"); :}
-            | RETURN Expression SEMICOLON
-              {: System.out.println("Return statement"); :};
+Statement ::= IDENTIFIER:id ASSIGN Expression:expr SEMICOLON
+            {: RESULT = new AssignmentStatement((String) id, (Expression) expr); :}
+            | IDENTIFIER:id LBRACKET Expression:index RBRACKET ASSIGN Expression:expr SEMICOLON
+            {: RESULT = new AssignmentStatement((String) id, (Expression) index, (Expression) expr); :}
+            | NestedRecordAccess:recordField DOT IDENTIFIER:id ASSIGN Expression:expr SEMICOLON
+            {: RESULT = new AssignmentStatement((NestedRecordAccess) recordField, (String) id, (Expression) expr); :}
+            | IDENTIFIER:id LPAREN ParamList:paramList RPAREN SEMICOLON
+            {: RESULT = new CallStatement((String) id, (List<Expression>) paramList); :}
+            | IF Expression:cond THEN DeclarationList:decls StatementList:stmts END SEMICOLON
+            {: RESULT = new IfStatement((Expression) cond, (List<Declaration>) decls, (List<Statement>) stmts); :}
+            | IF Expression:cond THEN DeclarationList:declsThen StatementList:stmtsThen ELSE DeclarationList:declsElse StatementList:stmtsElse END SEMICOLON
+            {: RESULT = new IfStatement((Expression) cond, (List<Declaration>) declsThen, (List<Declaration>) declsElse, (List<Statement>) stmtsThen, (List<Statement>) stmtsElse); :}
+            | WHILE Expression:cond LOOP DeclarationList:decls StatementList:stmts END SEMICOLON
+            {: RESULT = new WhileStatement((Expression) cond, (List<Declaration>) decls, (List<Statement>) stmts); :}
+            | FOR IDENTIFIER:id IN Expression:start RANGE Expression:end LOOP DeclarationList:decls StatementList:stmts END SEMICOLON
+            {:  RESULT = new ForStatement((String) id, (Expression) start, (Expression) end, false, (List<Declaration>) decls, (List<Statement>) stmts); :}
+            | FOR IDENTIFIER:id IN REVERSE Expression:start RANGE Expression:end LOOP DeclarationList:decls StatementList:stmts END SEMICOLON
+            {:  RESULT = new ForStatement((String) id, (Expression) start, (Expression) end, true, (List<Declaration>) decls, (List<Statement>) stmts); :}
+            | RETURN Expression:expr SEMICOLON
+            {: RESULT = new ReturnStatement((Expression) expr); :};
 
 Expression ::= Expression PLUS Expression
              | Expression MINUS Expression
