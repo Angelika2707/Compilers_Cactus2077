@@ -704,7 +704,7 @@ class CUP$parser$actions {
           case 15: // Type ::= INTEGER 
             {
               Object RESULT =null;
-
+		 RESULT = new IntegerType(); 
               CUP$parser$result = parser.getSymbolFactory().newSymbol("Type",9, ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), RESULT);
             }
           return CUP$parser$result;
@@ -713,7 +713,7 @@ class CUP$parser$actions {
           case 16: // Type ::= BOOLEAN 
             {
               Object RESULT =null;
-
+		 RESULT = new BooleanType(); 
               CUP$parser$result = parser.getSymbolFactory().newSymbol("Type",9, ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), RESULT);
             }
           return CUP$parser$result;
@@ -722,7 +722,7 @@ class CUP$parser$actions {
           case 17: // Type ::= REAL 
             {
               Object RESULT =null;
-
+		 RESULT = new RealType(); 
               CUP$parser$result = parser.getSymbolFactory().newSymbol("Type",9, ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), RESULT);
             }
           return CUP$parser$result;
@@ -731,7 +731,10 @@ class CUP$parser$actions {
           case 18: // Type ::= IDENTIFIER 
             {
               Object RESULT =null;
-
+		int idleft = ((java_cup.runtime.Symbol)CUP$parser$stack.peek()).left;
+		int idright = ((java_cup.runtime.Symbol)CUP$parser$stack.peek()).right;
+		String id = (String)((java_cup.runtime.Symbol) CUP$parser$stack.peek()).value;
+		 RESULT = new IdentifierType((String) id); 
               CUP$parser$result = parser.getSymbolFactory().newSymbol("Type",9, ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), RESULT);
             }
           return CUP$parser$result;
@@ -740,7 +743,13 @@ class CUP$parser$actions {
           case 19: // Type ::= ARRAY LBRACKET INTEGERNUM RBRACKET Type 
             {
               Object RESULT =null;
-		 System.out.println("Array type"); 
+		int sizeleft = ((java_cup.runtime.Symbol)CUP$parser$stack.elementAt(CUP$parser$top-2)).left;
+		int sizeright = ((java_cup.runtime.Symbol)CUP$parser$stack.elementAt(CUP$parser$top-2)).right;
+		Integer size = (Integer)((java_cup.runtime.Symbol) CUP$parser$stack.elementAt(CUP$parser$top-2)).value;
+		int elemTypeleft = ((java_cup.runtime.Symbol)CUP$parser$stack.peek()).left;
+		int elemTyperight = ((java_cup.runtime.Symbol)CUP$parser$stack.peek()).right;
+		Object elemType = (Object)((java_cup.runtime.Symbol) CUP$parser$stack.peek()).value;
+		 new ArrayType((Integer) size, (Type) elemType); 
               CUP$parser$result = parser.getSymbolFactory().newSymbol("Type",9, ((java_cup.runtime.Symbol)CUP$parser$stack.elementAt(CUP$parser$top-4)), ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), RESULT);
             }
           return CUP$parser$result;
@@ -749,7 +758,10 @@ class CUP$parser$actions {
           case 20: // Type ::= RECORD DeclarationList END 
             {
               Object RESULT =null;
-		 System.out.println("Record type"); 
+		int fieldsleft = ((java_cup.runtime.Symbol)CUP$parser$stack.elementAt(CUP$parser$top-1)).left;
+		int fieldsright = ((java_cup.runtime.Symbol)CUP$parser$stack.elementAt(CUP$parser$top-1)).right;
+		Object fields = (Object)((java_cup.runtime.Symbol) CUP$parser$stack.elementAt(CUP$parser$top-1)).value;
+		 RESULT = new RecordType((List<Declaration>) fields); 
               CUP$parser$result = parser.getSymbolFactory().newSymbol("Type",9, ((java_cup.runtime.Symbol)CUP$parser$stack.elementAt(CUP$parser$top-2)), ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), RESULT);
             }
           return CUP$parser$result;
