@@ -28,30 +28,6 @@ public class ForStatement extends Statement {
     }
     @Override
     public void accept(Visitor visitor) {
-        if (startExpression != null) {
-            startExpression.accept(visitor);
-        }
-
-        if (endExpression != null) {
-            endExpression.accept(visitor);
-        }
-
-        if (declarations != null) {
-            for (Declaration declaration : declarations) {
-                if (declaration != null) {
-                    declaration.accept(visitor);
-                }
-            }
-        }
-
-        if (statements != null) {
-            for (Statement statement : statements) {
-                if (statement != null) {
-                    statement.accept(visitor);
-                }
-            }
-        }
-
         visitor.visit(this);
     }
 }

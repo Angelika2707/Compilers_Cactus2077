@@ -18,14 +18,6 @@ public class CallStatement extends Statement {
 
     @Override
     public void accept(Visitor visitor) {
-        if (this.paramList != null) {
-            for (Expression argument : this.paramList ) {
-                if (argument != null) {
-                    argument.accept(visitor);
-                }
-            }
-        }
-
         visitor.visit(this);
     }
 }

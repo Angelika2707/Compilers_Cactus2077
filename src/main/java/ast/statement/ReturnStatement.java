@@ -17,10 +17,6 @@ public class ReturnStatement extends Statement {
 
     @Override
     public void accept(Visitor visitor) {
-        if (returnExpression != null) {
-            returnExpression.accept(visitor);
-        }
-
         visitor.visit(this);
     }
 }

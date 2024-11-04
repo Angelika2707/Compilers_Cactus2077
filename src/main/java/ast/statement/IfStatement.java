@@ -34,30 +34,5 @@ public class IfStatement extends Statement {
     @Override
     public void accept(Visitor visitor) {
         visitor.visit(this);
-        condition.accept(visitor);
-        for (Declaration declaration : thenDeclarations) {
-            if (declaration != null) {
-                declaration.accept(visitor);
-            }
-        }
-        for (Statement statement : thenStatements) {
-            if (statement != null) {
-                statement.accept(visitor);
-            }
-        }
-        if (elseDeclarations != null) {
-            for (Declaration declaration : elseDeclarations) {
-                if (declaration != null) {
-                    declaration.accept(visitor);
-                }
-            }
-        }
-        if (elseStatements != null) {
-            for (Statement statement : elseStatements) {
-                if (statement != null) {
-                    statement.accept(visitor);
-                }
-            }
-        }
     }
 }
