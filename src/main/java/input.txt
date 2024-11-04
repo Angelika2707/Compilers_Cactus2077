@@ -1,4 +1,5 @@
-var a : integer is 10;
-var b : integer is 20;
-var result : integer;
-result := a + b * 2;
+routine greet(num : integer) is
+    var result : integer is num + 10;
+end;
+
+greet(5);

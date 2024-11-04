@@ -36,6 +36,9 @@ non terminal ParamListNonEmpty;
 non terminal ReturnTypeOpt;
 non terminal NestedRecordAccess;
 non terminal ProgramUnits;
+non terminal DeclParamList;
+non terminal CallParamList;
+non terminal FuncParamList;
 
 /* Define precedences */
 precedence left OR, AND, XOR;
@@ -142,16 +145,34 @@ Expression ::= Expression:left PLUS Expression:right {: RESULT = new PlusExpress
 NestedRecordAccess ::= IDENTIFIER:id {: RESULT = new NestedRecordAccess((String) id); :}
              | NestedRecordAccess:rec DOT IDENTIFIER:id {: RESULT = new NestedRecordAccess((NestedRecordAccess) rec, (String) id); :};
 
-Function ::= ROUTINE IDENTIFIER:id LPAREN ParamList RPAREN ReturnTypeOpt IS DeclarationList StatementList END SEMICOLON
-            {: System.out.println("Function definition: " + id); :};
+Function ::= ROUTINE IDENTIFIER:id LPAREN FuncParamList:params RPAREN ReturnTypeOpt:returnType IS DeclarationList:decls StatementList:stmts END SEMICOLON
+            {: RESULT = new Function((String) id, (List<Parameter>) params, (Type) returnType, (List<Declaration>) decls, (List<Statement>) stmts); :};
 
-ParamList ::= /* empty */
-            | ParamListNonEmpty;
+ParamList ::= /* empty */ {: RESULT = new ArrayList<Parameter>(); :}
+          | CallParamList:callList {: RESULT = callList; :};
 
-ParamListNonEmpty ::= Expression
-                    | ParamListNonEmpty COMMA Expression
-                    | IDENTIFIER COLON Type
-                    | ParamListNonEmpty COMMA IDENTIFIER COLON Type;
+CallParamList ::= Expression:expr {:
+                  List<Expression> expressions = new ArrayList<>();
+                  expressions.add((Expression) expr);
+                  RESULT = expressions;
+              :}
+              | CallParamList:exprs COMMA Expression:expr {:
+                  ((List<Expression>) exprs).add((Expression) expr);
+                  RESULT = exprs;
+              :};
 
-ReturnTypeOpt ::= COLON Type
-                | /* empty */;
+FuncParamList ::= /* empty */ {: RESULT = new ArrayList<Parameter>(); :}
+               | DeclParamList:declList {: RESULT = declList; :};
+
+DeclParamList ::= IDENTIFIER:id COLON Type:type {:
+                  List<Parameter> params = new ArrayList<>();
+                  params.add(new Parameter((String) id, (Type) type));
+                  RESULT = params;
+              :}
+              | DeclParamList:params COMMA IDENTIFIER:id COLON Type:type {:
+                  ((List<Parameter>) params).add(new Parameter((String) id, (Type) type));
+                  RESULT = params;
+              :};
+
+ReturnTypeOpt ::= COLON Type:type {: RESULT = type; :}
+                | /* empty */ {: RESULT = null; :};

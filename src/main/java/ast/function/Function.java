@@ -1,24 +1,25 @@
 package ast.function;
 
 import ast.base.ProgramUnit;
-import ast.declaration.DeclarationList;
-import ast.statement.StatementList;
+import ast.declaration.Declaration;
+import ast.statement.Statement;
 import ast.type.Type;
 import ast.visitor.Visitor;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.util.List;
+
 @Getter
 @AllArgsConstructor
 public class Function extends ProgramUnit {
     private String identifier;
-    private ParamList paramList;
+    private List<Parameter> params;
     private Type returnType;
-    private DeclarationList declarationList;
-    private StatementList statementList;
+    private List<Declaration> decls;
+    private List<Statement> stmts;
 
     public void accept(Visitor visitor) {
-        this.paramList.accept(visitor);
         visitor.visit(this);
     }
 }
