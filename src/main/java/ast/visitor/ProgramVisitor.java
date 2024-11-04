@@ -150,8 +150,11 @@ public class ProgramVisitor implements Visitor {
     public void visit(NestedRecordAccess nestedRecordAccess) {
         printIndented("NestedRecordAccess:");
         increaseIndent(() -> {
-            for (String identifier : nestedRecordAccess.getIdentifiers()) {
-                printIndented("Identifier: " + identifier);
+            printIndented("Access:");
+            List<String> path = nestedRecordAccess.getAccessPath();
+            for (int i = 0; i < path.size(); i++) {
+                if (i == path.size() - 1) printIndented(path.get(i));
+                else printIndented(path.get(i) + ".");
             }
         });
     }
@@ -161,8 +164,8 @@ public class ProgramVisitor implements Visitor {
     public void visit(AndExpression andExpression) {
         printIndented("AndExpression:");
         increaseIndent(() -> {
-            andExpression.getLeft().accept(this);
-            andExpression.getRight().accept(this);
+            andExpression.left().accept(this);
+            andExpression.right().accept(this);
         });
     }
 
@@ -170,8 +173,8 @@ public class ProgramVisitor implements Visitor {
     public void visit(ArrayAccessExpression arrayAccessExpression) {
         printIndented("ArrayAccessExpression:");
         increaseIndent(() -> {
-            arrayAccessExpression.getArray().accept(this);
-            arrayAccessExpression.getIndex().accept(this);
+            printIndented("Identifier:" + arrayAccessExpression.identifier());
+            arrayAccessExpression.index().accept(this);
         });
     }
 
@@ -179,22 +182,22 @@ public class ProgramVisitor implements Visitor {
     public void visit(BinaryExpression binaryExpression) {
         printIndented("BinaryExpression:");
         increaseIndent(() -> {
-            binaryExpression.getLeft().accept(this);
-            binaryExpression.getRight().accept(this);
+            binaryExpression.left().accept(this);
+            binaryExpression.right().accept(this);
         });
     }
 
     @Override
     public void visit(BooleanLiteral booleanLiteral) {
-        printIndented("BooleanLiteral: " + booleanLiteral.getValue());
+        printIndented("BooleanLiteral: " + booleanLiteral.value());
     }
 
     @Override
     public void visit(DivExpression divExpression) {
         printIndented("DivExpression:");
         increaseIndent(() -> {
-            divExpression.getLeft().accept(this);
-            divExpression.getRight().accept(this);
+            divExpression.left().accept(this);
+            divExpression.right().accept(this);
         });
     }
 
@@ -202,16 +205,16 @@ public class ProgramVisitor implements Visitor {
     public void visit(EqualExpression equalExpression) {
         printIndented("EqualExpression:");
         increaseIndent(() -> {
-            equalExpression.getLeft().accept(this);
-            equalExpression.getRight().accept(this);
+            equalExpression.left().accept(this);
+            equalExpression.right().accept(this);
         });
     }
 
     @Override
     public void visit(FunctionCallExpression functionCallExpression) {
-        printIndented("FunctionCallExpression: " + functionCallExpression.getFunctionName());
+        printIndented("FunctionCallExpression: " + functionCallExpression.functionName());
         increaseIndent(() -> {
-            for (Expression argument : functionCallExpression.getArguments()) {
+            for (Expression argument : functionCallExpression.parameters()) {
                 argument.accept(this);
             }
         });
@@ -221,8 +224,8 @@ public class ProgramVisitor implements Visitor {
     public void visit(GreaterEqualExpression greaterEqualExpression) {
         printIndented("GreaterEqualExpression:");
         increaseIndent(() -> {
-            greaterEqualExpression.getLeft().accept(this);
-            greaterEqualExpression.getRight().accept(this);
+            greaterEqualExpression.left().accept(this);
+            greaterEqualExpression.right().accept(this);
         });
     }
 
@@ -230,22 +233,22 @@ public class ProgramVisitor implements Visitor {
     public void visit(GreaterThanExpression greaterThanExpression) {
         printIndented("GreaterThanExpression:");
         increaseIndent(() -> {
-            greaterThanExpression.getLeft().accept(this);
-            greaterThanExpression.getRight().accept(this);
+            greaterThanExpression.left().accept(this);
+            greaterThanExpression.right().accept(this);
         });
     }
 
     @Override
     public void visit(IntegerLiteral integerLiteral) {
-        printIndented("IntegerLiteral: " + integerLiteral.getValue());
+        printIndented("IntegerLiteral: " + integerLiteral.value());
     }
 
     @Override
     public void visit(LessEqualExpression lessEqualExpression) {
         printIndented("LessEqualExpression:");
         increaseIndent(() -> {
-            lessEqualExpression.getLeft().accept(this);
-            lessEqualExpression.getRight().accept(this);
+            lessEqualExpression.left().accept(this);
+            lessEqualExpression.right().accept(this);
         });
     }
 
@@ -253,8 +256,8 @@ public class ProgramVisitor implements Visitor {
     public void visit(LessThanExpression lessThanExpression) {
         printIndented("LessThanExpression:");
         increaseIndent(() -> {
-            lessThanExpression.getLeft().accept(this);
-            lessThanExpression.getRight().accept(this);
+            lessThanExpression.left().accept(this);
+            lessThanExpression.right().accept(this);
         });
     }
 
@@ -262,8 +265,8 @@ public class ProgramVisitor implements Visitor {
     public void visit(MinusExpression minusExpression) {
         printIndented("MinusExpression:");
         increaseIndent(() -> {
-            minusExpression.getLeft().accept(this);
-            minusExpression.getRight().accept(this);
+            minusExpression.left().accept(this);
+            minusExpression.right().accept(this);
         });
     }
 
@@ -271,8 +274,8 @@ public class ProgramVisitor implements Visitor {
     public void visit(ModExpression modExpression) {
         printIndented("ModExpression:");
         increaseIndent(() -> {
-            modExpression.getLeft().accept(this);
-            modExpression.getRight().accept(this);
+            modExpression.left().accept(this);
+            modExpression.right().accept(this);
         });
     }
 
@@ -280,8 +283,8 @@ public class ProgramVisitor implements Visitor {
     public void visit(MulExpression mulExpression) {
         printIndented("MulExpression:");
         increaseIndent(() -> {
-            mulExpression.getLeft().accept(this);
-            mulExpression.getRight().accept(this);
+            mulExpression.left().accept(this);
+            mulExpression.right().accept(this);
         });
     }
 
@@ -289,8 +292,8 @@ public class ProgramVisitor implements Visitor {
     public void visit(NotEqualExpression notEqualExpression) {
         printIndented("NotEqualExpression:");
         increaseIndent(() -> {
-            notEqualExpression.getLeft().accept(this);
-            notEqualExpression.getRight().accept(this);
+            notEqualExpression.left().accept(this);
+            notEqualExpression.right().accept(this);
         });
     }
 
@@ -298,7 +301,7 @@ public class ProgramVisitor implements Visitor {
     public void visit(NotExpression notExpression) {
         printIndented("NotExpression:");
         increaseIndent(() -> {
-            notExpression.getExpression().accept(this);
+            notExpression.expr().accept(this);
         });
     }
 
@@ -306,8 +309,8 @@ public class ProgramVisitor implements Visitor {
     public void visit(OrExpression orExpression) {
         printIndented("OrExpression:");
         increaseIndent(() -> {
-            orExpression.getLeft().accept(this);
-            orExpression.getRight().accept(this);
+            orExpression.left().accept(this);
+            orExpression.right().accept(this);
         });
     }
 
@@ -315,7 +318,7 @@ public class ProgramVisitor implements Visitor {
     public void visit(ParenthesizedExpression parenthesizedExpression) {
         printIndented("ParenthesizedExpression:");
         increaseIndent(() -> {
-            parenthesizedExpression.getExpression().accept(this);
+            parenthesizedExpression.expr().accept(this);
         });
     }
 
@@ -323,34 +326,34 @@ public class ProgramVisitor implements Visitor {
     public void visit(PlusExpression plusExpression) {
         printIndented("PlusExpression:");
         increaseIndent(() -> {
-            plusExpression.getLeft().accept(this);
-            plusExpression.getRight().accept(this);
+            plusExpression.left().accept(this);
+            plusExpression.right().accept(this);
         });
     }
 
     @Override
     public void visit(RealLiteral realLiteral) {
-        printIndented("RealLiteral: " + realLiteral.getValue());
+        printIndented("RealLiteral: " + realLiteral.value());
     }
 
     @Override
     public void visit(XorExpression xorExpression) {
         printIndented("XorExpression:");
         increaseIndent(() -> {
-            xorExpression.getLeft().accept(this);
-            xorExpression.getRight().accept(this);
+            xorExpression.left().accept(this);
+            xorExpression.right().accept(this);
         });
     }
 
     // Function-related nodes
     @Override
     public void visit(Function function) {
-        printIndented("Function: " + function.getName());
+        printIndented("Function: " + function.identifier());
         increaseIndent(() -> {
-            for (Parameter parameter : function.getParameters()) {
+            for (Parameter parameter : function.params()) {
                 parameter.accept(this);
             }
-            function.getReturnType().accept(this);
+            function.returnType().accept(this);
             for (Statement statement : function.getBody()) {
                 statement.accept(this);
             }
@@ -375,5 +378,33 @@ public class ProgramVisitor implements Visitor {
     }
 
     @Override
-    public void visit(Boolean
+    public void visit(BooleanType booleanType) {
+        printIndented("BooleanType");
+    }
+
+    @Override
+    public void visit(IdentifierType identifierType) {
+        printIndented("IdentifierType: " + identifierType.getName());
+    }
+
+    @Override
+    public void visit(IntegerType integerType) {
+        printIndented("IntegerType");
+    }
+
+    @Override
+    public void visit(RealType realType) {
+        printIndented("RealType");
+    }
+
+    @Override
+    public void visit(RecordType recordType) {
+        printIndented("RecordType");
+        increaseIndent(() -> {
+            for (Declaration declaration : recordType.getDeclarations()) {
+                declaration.accept(this);
+            }
+        });
+    }
+}
 
