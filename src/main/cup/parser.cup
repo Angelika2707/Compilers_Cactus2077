@@ -8,6 +8,7 @@ import ast.function.*;
 import ast.statement.*;
 import ast.type.*;
 import java.util.List;
+import java.util.Arrays;
 import java.util.ArrayList;
 
 terminal VAR, TYPE, INTEGER, BOOLEAN, REAL, ARRAY, RECORD, TRUE, FALSE, IS;
@@ -114,32 +115,32 @@ Statement ::= IDENTIFIER:id ASSIGN Expression:expr SEMICOLON
             | RETURN Expression:expr SEMICOLON
             {: RESULT = new ReturnStatement((Expression) expr); :};
 
-Expression ::= Expression PLUS Expression
-             | Expression MINUS Expression
-             | Expression MUL Expression
-             | Expression DIV Expression
-             | Expression MOD Expression
-             | Expression EQ Expression
-             | Expression NE Expression
-             | Expression GT Expression
-             | Expression LT Expression
-             | Expression GE Expression
-             | Expression LE Expression
-             | Expression AND Expression
-             | Expression OR Expression
-             | Expression XOR Expression
-             | NOT Expression
-             | TRUE
-             | FALSE
-             | INTEGERNUM
-             | REALNUM
-             | IDENTIFIER LBRACKET Expression RBRACKET
-             | IDENTIFIER LPAREN ParamList RPAREN
-             | LPAREN Expression RPAREN
-             | NestedRecordAccess;
+Expression ::= Expression:left PLUS Expression:right {: RESULT = new PlusExpression((Expression) left, (Expression) right); :}
+             | Expression:left MINUS Expression:right {: RESULT = new MinusExpression((Expression) left, (Expression) right); :}
+             | Expression:left MUL Expression:right {: RESULT = new MulExpression((Expression) left, (Expression) right); :}
+             | Expression:left DIV Expression:right {: RESULT = new DivExpression((Expression) left, (Expression) right); :}
+             | Expression:left MOD Expression:right {: RESULT = new ModExpression((Expression) left, (Expression) right); :}
+             | Expression:left EQ Expression:right {: RESULT = new EqualExpression((Expression) left, (Expression) right); :}
+             | Expression:left NE Expression:right {: RESULT = new NotEqualExpression((Expression) left, (Expression) right); :}
+             | Expression:left GT Expression:right {: RESULT = new GreaterThanExpression((Expression) left, (Expression) right); :}
+             | Expression:left LT Expression:right {: RESULT = new LessThanExpression((Expression) left, (Expression) right); :}
+             | Expression:left GE Expression:right {: RESULT = new GreaterEqualExpression((Expression) left, (Expression) right); :}
+             | Expression:left LE Expression:right {: RESULT = new LessEqualExpression((Expression) left, (Expression) right); :}
+             | Expression:left AND Expression:right {: RESULT = new AndExpression((Expression) left, (Expression) right); :}
+             | Expression:left OR Expression:right {: RESULT = new OrExpression((Expression) left, (Expression) right); :}
+             | Expression:left XOR Expression:right {: RESULT = new XorExpression((Expression) left, (Expression) right); :}
+             | NOT Expression:expr {: RESULT = new NotExpression((Expression) expr); :}
+             | TRUE {: RESULT = new BooleanLiteral(true); :}
+             | FALSE {: RESULT = new BooleanLiteral(false); :}
+             | INTEGERNUM:value {: RESULT = new IntegerLiteral((Integer) value); :}
+             | REALNUM:value {: RESULT = new RealLiteral((Double) value); :}
+             | IDENTIFIER:id LBRACKET Expression:index RBRACKET {: RESULT = new ArrayAccessExpression((String) id, (Expression) index); :}
+             | IDENTIFIER:id LPAREN ParamList:paramList RPAREN {: RESULT = new FunctionCallExpression((String) id, (List<Expression>) paramList); :}
+             | LPAREN Expression:expr RPAREN {: RESULT = new ParenthesizedExpression((Expression) expr); :}
+             | NestedRecordAccess:nra {: RESULT = nra; :};
 
-NestedRecordAccess ::= IDENTIFIER
-             | NestedRecordAccess DOT IDENTIFIER;
+NestedRecordAccess ::= IDENTIFIER:id {: RESULT = new NestedRecordAccess((String) id); :}
+             | NestedRecordAccess:rec DOT IDENTIFIER:id {: RESULT = new NestedRecordAccess((NestedRecordAccess) rec, (String) id); :};
 
 Function ::= ROUTINE IDENTIFIER:id LPAREN ParamList RPAREN ReturnTypeOpt IS DeclarationList StatementList END SEMICOLON
             {: System.out.println("Function definition: " + id); :};

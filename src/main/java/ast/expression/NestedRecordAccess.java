@@ -1,16 +1,36 @@
 package ast.expression;
 
-import ast.base.ASTNode;
 import ast.visitor.Visitor;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Getter
-@AllArgsConstructor
-public class NestedRecordAccess extends ASTNode {
+public class NestedRecordAccess extends Expression {
     private String identifier;
-    private NestedRecordAccess nestedRecord;
+    private NestedRecordAccess nestedAccess;
+
+    public NestedRecordAccess(String identifier) {
+        this.identifier = identifier;
+        this.nestedAccess = null;
+    }
+
+    public NestedRecordAccess(NestedRecordAccess nestedAccess, String identifier) {
+        this.identifier = identifier;
+        this.nestedAccess = nestedAccess;
+    }
+
+    public List<String> getAccessPath() {
+        List<String> path = new ArrayList<>();
+        NestedRecordAccess current = this;
+        while (current != null) {
+            path.addFirst(current.identifier);
+            current = current.nestedAccess;
+        }
+        return path;
+    }
 
     @Override
     public void accept(Visitor visitor) {
