@@ -353,7 +353,9 @@ public class ProgramVisitor implements Visitor {
             for (Parameter parameter : function.params()) {
                 parameter.accept(this);
             }
-            function.returnType().accept(this);
+            if(function.returnType() != null) {
+                function.returnType().accept(this);
+            }
             for (Statement statement : function.stmts()) {
                 statement.accept(this);
             }

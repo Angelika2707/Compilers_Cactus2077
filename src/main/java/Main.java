@@ -1,4 +1,5 @@
 import ast.base.Program;
+import ast.visitor.ProgramVisitor;
 import java_cup.runtime.Symbol;
 import lexer.Lexer;
 import parser.parser;
@@ -19,6 +20,9 @@ public class Main {
                 System.out.println("Список units успешно заполнен. Количество элементов: " + result.units().size());
 
                 result.units().forEach(unit -> System.out.println(unit));
+                ProgramVisitor visitor = new ProgramVisitor();
+                // Использование visitor для обхода программы
+                result.accept(visitor);
             } else {
                 System.out.println("Список units пуст или не был инициализирован.");
             }
