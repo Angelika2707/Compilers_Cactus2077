@@ -77,7 +77,7 @@ public class ProgramVisitor implements Visitor {
                 }
             }
             if (path.size() == 1) {
-                printIndented("Identifier: ");
+                printIndented("Identifier:");
                 increaseIndent(() -> printIndented(path.getFirst().identifier()));
             } else {
                 Collections.reverse(path);
@@ -85,9 +85,11 @@ public class ProgramVisitor implements Visitor {
                     pathElement.accept(this);
                 }
             }
+            if (assignmentStatement.index() != null) {
+                printIndented("Index:");
+                increaseIndent(() -> assignmentStatement.index().accept(this));
+            }
             assignmentStatement.expression().accept(this);
-            if (assignmentStatement.index() != null)
-                assignmentStatement.index().accept(this);
         });
     }
 
@@ -400,6 +402,10 @@ public class ProgramVisitor implements Visitor {
         printIndented("ArrayType:");
         increaseIndent(() -> {
             arrayType.elementType().accept(this);
+        });
+        printIndented("Size:");
+        increaseIndent(() -> {
+            printIndented(String.valueOf(arrayType.size()));
         });
     }
 

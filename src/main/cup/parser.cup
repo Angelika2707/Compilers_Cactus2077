@@ -32,7 +32,6 @@ non terminal Expression;
 non terminal Type;
 non terminal Function;
 non terminal ParamList;
-non terminal ParamListNonEmpty;
 non terminal ReturnTypeOpt;
 non terminal NestedRecordAccess;
 non terminal ProgramUnits;
@@ -85,7 +84,7 @@ Type ::= INTEGER {: RESULT = new IntegerType(); :}
        | BOOLEAN {: RESULT = new BooleanType(); :}
        | REAL {: RESULT = new RealType(); :}
        | IDENTIFIER:id {: RESULT = new IdentifierType((String) id); :}
-       | ARRAY LBRACKET INTEGERNUM:size RBRACKET Type:elemType {: new ArrayType((Integer) size, (Type) elemType); :}
+       | ARRAY LBRACKET INTEGERNUM:size RBRACKET Type:elemType {: RESULT = new ArrayType((Integer) size, (Type) elemType); :}
        | RECORD DeclarationList:fields END {: RESULT = new RecordType((List<Declaration>) fields); :};
 
 StatementList ::= Statement:statement StatementList:list
