@@ -1,8 +1,6 @@
 package ast.function;
 
 import ast.base.ProgramUnit;
-import ast.declaration.DeclarationList;
-import ast.statement.StatementList;
 import ast.type.Type;
 import ast.visitor.Visitor;
 import lombok.AllArgsConstructor;
