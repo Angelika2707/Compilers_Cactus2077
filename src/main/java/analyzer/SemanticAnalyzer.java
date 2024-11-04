@@ -5,6 +5,7 @@ import ast.declaration.TypeDeclaration;
 import ast.declaration.VariableDeclaration;
 import ast.expression.NestedRecordAccess;
 import ast.statement.AssignmentStatement;
+import ast.function.Function;
 import ast.visitor.ProgramVisitor;
 
 import java.io.OutputStream;
@@ -32,7 +33,6 @@ public class SemanticAnalyzer {
         System.setOut(new PrintStream(new OutputStream() {
             @Override
             public void write(int b) {
-                // ignore
             }
         }));
 
@@ -47,6 +47,15 @@ public class SemanticAnalyzer {
                 public void visit(TypeDeclaration typeDeclaration) {
                     declaredIdentifiers.add(typeDeclaration.id());
                 }
+
+                @Override
+                public void visit(Function functionDeclaration) {
+                    for (var declaration : functionDeclaration.decls()) {
+                        if (declaration instanceof VariableDeclaration varDecl) {
+                            declaredIdentifiers.add(varDecl.id());
+                        }
+                    }
+                }
             });
         } finally {
             System.setOut(originalOut);
@@ -58,7 +67,6 @@ public class SemanticAnalyzer {
         System.setOut(new PrintStream(new OutputStream() {
             @Override
             public void write(int b) {
-                // ignore
             }
         }));
 
@@ -75,6 +83,13 @@ public class SemanticAnalyzer {
                 public void visit(NestedRecordAccess identifier) {
                     usedIdentifiers.add(identifier.identifier());
                 }
+
+                @Override
+                public void visit(Function functionDeclaration) {
+                    for (var statement : functionDeclaration.stmts()) {
+                        statement.accept(this);
+                    }
+                }
             });
         } finally {
             System.setOut(originalOut);
@@ -89,6 +104,16 @@ public class SemanticAnalyzer {
                 return !usedIdentifiers.contains(typeDecl.id());
             } else if (unit instanceof AssignmentStatement assignStmt) {
                 return !usedIdentifiers.contains(assignStmt.identifier());
+            } else if (unit instanceof Function functionDecl) {
+                functionDecl.decls().removeIf(declaration -> {
+                    if (declaration instanceof VariableDeclaration varDecl) {
+                        return !usedIdentifiers.contains(varDecl.id());
+                    }
+                    return false;
+                });
+                functionDecl.stmts().removeIf(statement -> {
+                    return false;
+                });
             }
             return false;
         });
