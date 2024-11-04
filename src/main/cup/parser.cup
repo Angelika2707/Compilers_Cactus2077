@@ -137,10 +137,10 @@ Expression ::= Expression:left PLUS Expression:right {: RESULT = new PlusExpress
              | IDENTIFIER:id LBRACKET Expression:index RBRACKET {: RESULT = new ArrayAccessExpression((String) id, (Expression) index); :}
              | IDENTIFIER:id LPAREN ParamList:paramList RPAREN {: RESULT = new FunctionCallExpression((String) id, (List<Expression>) paramList); :}
              | LPAREN Expression:expr RPAREN {: RESULT = new ParenthesizedExpression((Expression) expr); :}
-             | NestedRecordAccess;
+             | NestedRecordAccess:nra {: RESULT = nra; :};
 
-NestedRecordAccess ::= IDENTIFIER
-             | NestedRecordAccess DOT IDENTIFIER;
+NestedRecordAccess ::= IDENTIFIER:id {: RESULT = new NestedRecordAccess((String) id); :}
+             | NestedRecordAccess:rec DOT IDENTIFIER:id {: RESULT = new NestedRecordAccess((NestedRecordAccess) rec, (String) id); :};
 
 Function ::= ROUTINE IDENTIFIER:id LPAREN ParamList RPAREN ReturnTypeOpt IS DeclarationList StatementList END SEMICOLON
             {: System.out.println("Function definition: " + id); :};

@@ -1301,7 +1301,10 @@ class CUP$parser$actions {
           case 55: // Expression ::= NestedRecordAccess 
             {
               Object RESULT =null;
-
+		int nraleft = ((java_cup.runtime.Symbol)CUP$parser$stack.peek()).left;
+		int nraright = ((java_cup.runtime.Symbol)CUP$parser$stack.peek()).right;
+		Object nra = (Object)((java_cup.runtime.Symbol) CUP$parser$stack.peek()).value;
+		 RESULT = nra; 
               CUP$parser$result = parser.getSymbolFactory().newSymbol("Expression",8, ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), RESULT);
             }
           return CUP$parser$result;
@@ -1313,7 +1316,7 @@ class CUP$parser$actions {
 		int idleft = ((java_cup.runtime.Symbol)CUP$parser$stack.peek()).left;
 		int idright = ((java_cup.runtime.Symbol)CUP$parser$stack.peek()).right;
 		String id = (String)((java_cup.runtime.Symbol) CUP$parser$stack.peek()).value;
-		 RESULT = new NestedRecordAccessExpression(Arrays.asList((String) id)); 
+		 RESULT = new NestedRecordAccess((String) id); 
               CUP$parser$result = parser.getSymbolFactory().newSymbol("NestedRecordAccess",14, ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), RESULT);
             }
           return CUP$parser$result;
@@ -1322,17 +1325,13 @@ class CUP$parser$actions {
           case 57: // NestedRecordAccess ::= NestedRecordAccess DOT IDENTIFIER 
             {
               Object RESULT =null;
-		int recordFieldleft = ((java_cup.runtime.Symbol)CUP$parser$stack.elementAt(CUP$parser$top-2)).left;
-		int recordFieldright = ((java_cup.runtime.Symbol)CUP$parser$stack.elementAt(CUP$parser$top-2)).right;
-		Object recordField = (Object)((java_cup.runtime.Symbol) CUP$parser$stack.elementAt(CUP$parser$top-2)).value;
+		int recleft = ((java_cup.runtime.Symbol)CUP$parser$stack.elementAt(CUP$parser$top-2)).left;
+		int recright = ((java_cup.runtime.Symbol)CUP$parser$stack.elementAt(CUP$parser$top-2)).right;
+		Object rec = (Object)((java_cup.runtime.Symbol) CUP$parser$stack.elementAt(CUP$parser$top-2)).value;
 		int idleft = ((java_cup.runtime.Symbol)CUP$parser$stack.peek()).left;
 		int idright = ((java_cup.runtime.Symbol)CUP$parser$stack.peek()).right;
 		String id = (String)((java_cup.runtime.Symbol) CUP$parser$stack.peek()).value;
-		
-                  List<String> ids = ((NestedRecordAccessExpression) recordField).identifiers();
-                  ids.add((String) id);
-                  RESULT = new NestedRecordAccessExpression(ids);
-              
+		 RESULT = new NestedRecordAccess((NestedRecordAccess) rec, (String) id); 
               CUP$parser$result = parser.getSymbolFactory().newSymbol("NestedRecordAccess",14, ((java_cup.runtime.Symbol)CUP$parser$stack.elementAt(CUP$parser$top-2)), ((java_cup.runtime.Symbol)CUP$parser$stack.peek()), RESULT);
             }
           return CUP$parser$result;
