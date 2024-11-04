@@ -173,10 +173,12 @@ public class ProgramVisitor implements Visitor {
         increaseIndent(() -> {
             List<String> path = nestedRecordAccess.getAccessPath();
             printIndented("NestedRecordAccess:");
-            for (int i = 0; i < path.size(); i++) {
-                if (i == path.size() - 1) printIndented(path.get(i));
-                else printIndented(path.get(i) + ".");
-            }
+            increaseIndent(() -> {
+                for (int i = 0; i < path.size(); i++) {
+                    if (i == path.size() - 1) printIndented(path.get(i));
+                    else printIndented(path.get(i) + ".");
+                }
+            });
         });
     }
 
@@ -375,12 +377,14 @@ public class ProgramVisitor implements Visitor {
                 parameter.accept(this);
             }
             printIndented("ReturnType:");
-            if(function.returnType() != null) {
-                function.returnType().accept(this);
-            } else printIndented("null");
-            for (Statement statement : function.stmts()) {
-                statement.accept(this);
-            }
+            increaseIndent(() -> {
+                if(function.returnType() != null) {
+                    function.returnType().accept(this);
+                } else printIndented("null");
+                for (Statement statement : function.stmts()) {
+                    statement.accept(this);
+                }
+            });
 
             for (Declaration declaration : function.decls()) {
                 declaration.accept(this);
