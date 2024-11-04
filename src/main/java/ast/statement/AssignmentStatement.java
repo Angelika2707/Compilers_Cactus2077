@@ -36,14 +36,6 @@ public class AssignmentStatement extends Statement {
         this.index = null;
     }
 
-    public NestedRecordAccess getNextRecordField(NestedRecordAccess recordField) {
-        if (recordField != null) {
-            return recordField.nestedAccess();
-        } else {
-            return null;
-        }
-    }
-
     @Override
     public void accept(Visitor visitor) {
         visitor.visit(this);

@@ -1,5 +1,4 @@
-routine greet(num : integer) is
-    var result : integer is num + 10;
-end;
-
-greet(5);
+type MyInteger is integer;
+var a : MyInteger is 100;
+var b : MyInteger;
+b := a;
