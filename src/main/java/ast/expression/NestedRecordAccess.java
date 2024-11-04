@@ -2,6 +2,7 @@ package ast.expression;
 
 import ast.visitor.Visitor;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,8 +10,8 @@ import java.util.List;
 
 @Getter
 public class NestedRecordAccess extends Expression {
-    private String identifier;
-    private NestedRecordAccess nestedAccess;
+    private final String identifier;
+    @Setter private NestedRecordAccess nestedAccess;
 
     public NestedRecordAccess(String identifier) {
         this.identifier = identifier;

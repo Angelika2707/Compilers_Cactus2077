@@ -66,25 +66,9 @@ public class ProgramVisitor implements Visitor {
     public void visit(AssignmentStatement assignmentStatement) {
         printIndented("AssignmentStatement:");
         increaseIndent(() -> {
-            List<NestedRecordAccess> path = new ArrayList<>();
-            path.add(new NestedRecordAccess(assignmentStatement.identifier()));
-            if (assignmentStatement.recordField() != null) {
-                path.add(assignmentStatement.recordField());
-                NestedRecordAccess nextField = assignmentStatement.getNextRecordField(assignmentStatement.recordField());
-                while (nextField != null) {
-                    path.add(nextField);
-                    nextField = assignmentStatement.getNextRecordField(assignmentStatement.recordField());
-                }
-            }
-            if (path.size() == 1) {
-                printIndented("Identifier:");
-                increaseIndent(() -> printIndented(path.getFirst().identifier()));
-            } else {
-                Collections.reverse(path);
-                for (NestedRecordAccess pathElement : path) {
-                    pathElement.accept(this);
-                }
-            }
+            NestedRecordAccess curr = new NestedRecordAccess(assignmentStatement.recordField(), assignmentStatement.identifier());
+            curr.accept(this);
+
             if (assignmentStatement.index() != null) {
                 printIndented("Index:");
                 increaseIndent(() -> assignmentStatement.index().accept(this));
@@ -172,13 +156,20 @@ public class ProgramVisitor implements Visitor {
         printIndented("Access:");
         increaseIndent(() -> {
             List<String> path = nestedRecordAccess.getAccessPath();
-            printIndented("NestedRecordAccess:");
-            increaseIndent(() -> {
-                for (int i = 0; i < path.size(); i++) {
-                    if (i == path.size() - 1) printIndented(path.get(i));
-                    else printIndented(path.get(i) + ".");
-                }
-            });
+            if (path.size() == 1) {
+                printIndented("Identifier:");
+                increaseIndent(() -> {
+                    printIndented(path.getFirst());
+                });
+            } else {
+                printIndented("NestedRecordAccess:");
+                increaseIndent(() -> {
+                    for (int i = 0; i < path.size(); i++) {
+                        if (i == path.size() - 1) printIndented(path.get(i));
+                        else printIndented(path.get(i) + ".");
+                    }
+                });
+            }
         });
     }
 

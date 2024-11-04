@@ -21,7 +21,6 @@ public class Main {
 
                 result.units().forEach(unit -> System.out.println(unit));
                 ProgramVisitor visitor = new ProgramVisitor();
-                // Использование visitor для обхода программы
                 result.accept(visitor);
             } else {
                 System.out.println("Список units пуст или не был инициализирован.");
