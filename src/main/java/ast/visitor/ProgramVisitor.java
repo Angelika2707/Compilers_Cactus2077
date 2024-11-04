@@ -11,6 +11,8 @@ import ast.function.Parameter;
 import ast.statement.*;
 import ast.type.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ProgramVisitor implements Visitor {
@@ -64,17 +66,28 @@ public class ProgramVisitor implements Visitor {
     public void visit(AssignmentStatement assignmentStatement) {
         printIndented("AssignmentStatement:");
         increaseIndent(() -> {
-            assignmentStatement.expression().accept(this);
-            if (assignmentStatement.index() != null)
-                assignmentStatement.index().accept(this);
+            List<NestedRecordAccess> path = new ArrayList<>();
+            path.add(new NestedRecordAccess(assignmentStatement.identifier()));
             if (assignmentStatement.recordField() != null) {
-                assignmentStatement.recordField().accept(this);
+                path.add(assignmentStatement.recordField());
                 NestedRecordAccess nextField = assignmentStatement.getNextRecordField(assignmentStatement.recordField());
                 while (nextField != null) {
-                    nextField.accept(this);
+                    path.add(nextField);
                     nextField = assignmentStatement.getNextRecordField(assignmentStatement.recordField());
                 }
             }
+            if (path.size() == 1) {
+                printIndented("Identifier: ");
+                increaseIndent(() -> printIndented(path.getFirst().identifier()));
+            } else {
+                Collections.reverse(path);
+                for (NestedRecordAccess pathElement : path) {
+                    pathElement.accept(this);
+                }
+            }
+            assignmentStatement.expression().accept(this);
+            if (assignmentStatement.index() != null)
+                assignmentStatement.index().accept(this);
         });
     }
 
@@ -157,15 +170,10 @@ public class ProgramVisitor implements Visitor {
         printIndented("Access:");
         increaseIndent(() -> {
             List<String> path = nestedRecordAccess.getAccessPath();
-            if (path.size() == 1) {
-                printIndented("Identifier:");
-                printIndented(path.getFirst());
-            } else {
-                printIndented("NestedRecordAccess:");
-                for (int i = 0; i < path.size(); i++) {
-                    if (i == path.size() - 1) printIndented(path.get(i));
-                    else printIndented(path.get(i) + ".");
-                }
+            printIndented("NestedRecordAccess:");
+            for (int i = 0; i < path.size(); i++) {
+                if (i == path.size() - 1) printIndented(path.get(i));
+                else printIndented(path.get(i) + ".");
             }
         });
     }
