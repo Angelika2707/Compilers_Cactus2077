@@ -354,17 +354,21 @@ public class ProgramVisitor implements Visitor {
                 parameter.accept(this);
             }
             function.returnType().accept(this);
-            for (Statement statement : function.getBody()) {
+            for (Statement statement : function.stmts()) {
                 statement.accept(this);
+            }
+
+            for (Declaration declaration : function.decls()) {
+                declaration.accept(this);
             }
         });
     }
 
     @Override
     public void visit(Parameter parameter) {
-        printIndented("Parameter: " + parameter.getName());
+        printIndented("Parameter: " + parameter.identifier());
         increaseIndent(() -> {
-            parameter.getType().accept(this);
+            parameter.type().accept(this);
         });
     }
 
@@ -373,7 +377,7 @@ public class ProgramVisitor implements Visitor {
     public void visit(ArrayType arrayType) {
         printIndented("ArrayType:");
         increaseIndent(() -> {
-            arrayType.getElementType().accept(this);
+            arrayType.elementType().accept(this);
         });
     }
 
@@ -384,7 +388,7 @@ public class ProgramVisitor implements Visitor {
 
     @Override
     public void visit(IdentifierType identifierType) {
-        printIndented("IdentifierType: " + identifierType.getName());
+        printIndented("IdentifierType: " + identifierType.identifier());
     }
 
     @Override
@@ -401,7 +405,7 @@ public class ProgramVisitor implements Visitor {
     public void visit(RecordType recordType) {
         printIndented("RecordType");
         increaseIndent(() -> {
-            for (Declaration declaration : recordType.getDeclarations()) {
+            for (Declaration declaration : recordType.fields()) {
                 declaration.accept(this);
             }
         });
