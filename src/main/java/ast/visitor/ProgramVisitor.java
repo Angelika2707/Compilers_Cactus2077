@@ -67,8 +67,14 @@ public class ProgramVisitor implements Visitor {
             assignmentStatement.expression().accept(this);
             if (assignmentStatement.index() != null)
                 assignmentStatement.index().accept(this);
-            if (assignmentStatement.recordField() != null)
+            if (assignmentStatement.recordField() != null) {
                 assignmentStatement.recordField().accept(this);
+                NestedRecordAccess nextField = assignmentStatement.getNextRecordField(assignmentStatement.recordField());
+                while (nextField != null) {
+                    nextField.accept(this);
+                    nextField = assignmentStatement.getNextRecordField(assignmentStatement.recordField());
+                }
+            }
         });
     }
 
@@ -148,13 +154,18 @@ public class ProgramVisitor implements Visitor {
 
     @Override
     public void visit(NestedRecordAccess nestedRecordAccess) {
-        printIndented("NestedRecordAccess:");
+        printIndented("Access:");
         increaseIndent(() -> {
-            printIndented("Access:");
             List<String> path = nestedRecordAccess.getAccessPath();
-            for (int i = 0; i < path.size(); i++) {
-                if (i == path.size() - 1) printIndented(path.get(i));
-                else printIndented(path.get(i) + ".");
+            if (path.size() == 1) {
+                printIndented("Identifier:");
+                printIndented(path.getFirst());
+            } else {
+                printIndented("NestedRecordAccess:");
+                for (int i = 0; i < path.size(); i++) {
+                    if (i == path.size() - 1) printIndented(path.get(i));
+                    else printIndented(path.get(i) + ".");
+                }
             }
         });
     }
@@ -353,9 +364,10 @@ public class ProgramVisitor implements Visitor {
             for (Parameter parameter : function.params()) {
                 parameter.accept(this);
             }
+            printIndented("ReturnType:");
             if(function.returnType() != null) {
                 function.returnType().accept(this);
-            }
+            } else printIndented("null");
             for (Statement statement : function.stmts()) {
                 statement.accept(this);
             }

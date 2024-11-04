@@ -5,6 +5,9 @@ import ast.expression.NestedRecordAccess;
 import ast.visitor.Visitor;
 import lombok.Getter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 public class AssignmentStatement extends Statement {
     private final String identifier;
@@ -31,6 +34,14 @@ public class AssignmentStatement extends Statement {
         this.identifier = fieldName;
         this.expression = expr;
         this.index = null;
+    }
+
+    public NestedRecordAccess getNextRecordField(NestedRecordAccess recordField) {
+        if (recordField != null) {
+            return recordField.nestedAccess();
+        } else {
+            return null;
+        }
     }
 
     @Override
