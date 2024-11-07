@@ -6,8 +6,8 @@ import ast.declaration.VariableDeclaration;
 import ast.expression.ArrayAccessExpression;
 import ast.expression.FunctionCallExpression;
 import ast.expression.NestedRecordAccess;
-import ast.statement.AssignmentStatement;
 import ast.function.Function;
+import ast.statement.AssignmentStatement;
 import ast.statement.CallStatement;
 import ast.type.ArrayType;
 import ast.type.IdentifierType;
@@ -125,6 +125,7 @@ public class SemanticAnalyzer {
 
                 @Override
                 public void visit(CallStatement callStatement) {
+                    usedIdentifiers.add(callStatement.identifier());
                     for (var param : callStatement.paramList()) {
                         if (param instanceof NestedRecordAccess) {
                             usedIdentifiers.add(((NestedRecordAccess) param).identifier());
@@ -160,11 +161,16 @@ public class SemanticAnalyzer {
             case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
             case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
             case Function functionDecl -> {
-                functionDecl.decls().removeIf(declaration ->
-                        declaration instanceof VariableDeclaration varDecl && !usedIdentifiers.contains(varDecl.id())
-                );
-                functionDecl.stmts().removeIf(statement -> false); // Здесь логика еще не определена
-                yield false; // Так как функции удалять не нужно, возвращаем false
+                functionDecl.decls().removeIf(declaration -> switch (declaration) {
+                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                    default -> false;
+                });
+                functionDecl.stmts().removeIf(statement -> switch (statement) {
+                    case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
+                    default -> false;
+                });
+                yield !usedIdentifiers.contains(functionDecl.identifier());
             }
             default -> false;
         });
