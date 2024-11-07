@@ -7,18 +7,14 @@ import ast.expression.ArrayAccessExpression;
 import ast.expression.FunctionCallExpression;
 import ast.expression.NestedRecordAccess;
 import ast.function.Function;
-import ast.statement.AssignmentStatement;
-import ast.statement.CallStatement;
+import ast.statement.*;
 import ast.type.ArrayType;
 import ast.type.IdentifierType;
 import ast.visitor.ProgramVisitor;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class SemanticAnalyzer {
 
@@ -146,8 +142,48 @@ public class SemanticAnalyzer {
                 }
 
                 @Override
+                public void visit(WhileStatement whileStatement) {
+                    whileStatement.condition().accept(this);
+                    for (var statement : whileStatement.statements()) {
+                        statement.accept(this);
+                    }
+                }
+
+                @Override
+                public void visit(ForStatement forStatement) {
+                    usedIdentifiers.add(forStatement.loopVariable());
+                    for (var statement : forStatement.statements()) {
+                        statement.accept(this);
+                    }
+                }
+
+                @Override
+                public void visit(IfStatement ifStatement) {
+                    ifStatement.condition().accept(this);
+                    for (var statement: ifStatement.thenStatements()) {
+                        statement.accept(this);
+                    }
+                    for (var statement : ifStatement.elseStatements()) {
+                        statement.accept(this);
+                    }
+                }
+
+                @Override
+                public void visit(ReturnStatement returnStatement) {
+                    returnStatement.returnExpression().accept(this);
+                }
+
+                @Override
                 public void visit(ArrayAccessExpression arrayAccessExpression) {
                     usedIdentifiers.add(arrayAccessExpression.identifier());
+                }
+
+                @Override
+                public void visit(FunctionCallExpression functionCallExpression) {
+                    usedIdentifiers.add(functionCallExpression.functionName());
+                    for (var param : functionCallExpression.parameters()) {
+                        param.accept(this);
+                    }
                 }
             });
         } finally {
@@ -160,6 +196,67 @@ public class SemanticAnalyzer {
             case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
             case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
             case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
+            case WhileStatement whileStatement -> {
+                whileStatement.declarations().removeIf(declaration -> switch (declaration) {
+                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                    default -> false;
+                });
+                whileStatement.statements().removeIf(statement -> switch (statement) {
+                    case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
+                    default -> false;
+                });
+                yield false;
+            }
+            case ForStatement forStatement -> {
+                forStatement.declarations().removeIf(declaration -> switch (declaration) {
+                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                    default -> false;
+                });
+                forStatement.statements().removeIf(statement -> switch (statement) {
+                    case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
+                    default -> false;
+                });
+                yield false;
+            }
+            case IfStatement ifStatement -> {
+                ifStatement.thenDeclarations().removeIf(declaration -> switch (declaration) {
+                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                    default -> false;
+                });
+                ifStatement.elseDeclarations().removeIf(declaration -> switch (declaration) {
+                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                    default -> false;
+                });
+                ifStatement.thenStatements().removeIf(statement -> switch (statement) {
+                    case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
+                    default -> false;
+                });
+                ifStatement.elseStatements().removeIf(statement -> switch (statement) {
+                    case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
+                    default -> false;
+                });
+                yield false;
+            }
+            case ReturnStatement returnStatement -> {
+                switch (returnStatement.returnExpression()) {
+                    case NestedRecordAccess nestedRecordAccess: {
+                        if (!usedIdentifiers.contains(nestedRecordAccess.identifier())) {
+                            yield true;
+                        }
+                        if (nestedRecordAccess.nestedAccess() != null) {
+                            List<String> path = nestedRecordAccess.getAccessPath();
+                            for (var field: path) {
+                                if (!usedIdentifiers.contains(field)) yield true;
+                            }
+                        }
+                    }
+                    default: yield false;
+                }
+            }
             case Function functionDecl -> {
                 functionDecl.decls().removeIf(declaration -> switch (declaration) {
                     case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
