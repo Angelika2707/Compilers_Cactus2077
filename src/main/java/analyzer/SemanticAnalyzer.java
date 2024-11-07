@@ -95,6 +95,10 @@ public class SemanticAnalyzer {
                     if (assignmentStatement.expression() != null) {
                         assignmentStatement.expression().accept(this);
                     }
+                    if (assignmentStatement.recordField() != null) {
+                        usedIdentifiers.add(assignmentStatement.identifier());
+                        usedIdentifiers.add(assignmentStatement.recordField().getAccessPath().getLast());
+                    }
                 }
 
                 @Override
