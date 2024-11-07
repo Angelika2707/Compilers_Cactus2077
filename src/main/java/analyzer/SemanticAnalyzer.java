@@ -3,20 +3,28 @@ package analyzer;
 import ast.base.Program;
 import ast.declaration.TypeDeclaration;
 import ast.declaration.VariableDeclaration;
+import ast.expression.ArrayAccessExpression;
+import ast.expression.FunctionCallExpression;
 import ast.expression.NestedRecordAccess;
 import ast.statement.AssignmentStatement;
 import ast.function.Function;
+import ast.statement.CallStatement;
+import ast.type.ArrayType;
+import ast.type.IdentifierType;
 import ast.visitor.ProgramVisitor;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class SemanticAnalyzer {
 
     private final Set<String> usedIdentifiers = new HashSet<>();
     private final Set<String> declaredIdentifiers = new HashSet<>();
+    private final Map<String, Integer> arrHashmap = new HashMap<>();
 
     public Program analyze(Program program) {
         collectDeclaredIdentifiers(program);
@@ -41,11 +49,21 @@ public class SemanticAnalyzer {
                 @Override
                 public void visit(VariableDeclaration variableDeclaration) {
                     declaredIdentifiers.add(variableDeclaration.id());
+                    if (variableDeclaration.type() instanceof ArrayType) {
+                        arrHashmap.put(variableDeclaration.id(), ((ArrayType) variableDeclaration.type()).size());
+                    } else if (variableDeclaration.expression() == null) {
+                        if (variableDeclaration.type() instanceof IdentifierType) {
+                            declaredIdentifiers.add(((IdentifierType) variableDeclaration.type()).identifier());
+                        }
+                    }
                 }
 
                 @Override
                 public void visit(TypeDeclaration typeDeclaration) {
                     declaredIdentifiers.add(typeDeclaration.id());
+                    if (typeDeclaration.type() instanceof ArrayType) {
+                        arrHashmap.put(typeDeclaration.id(), ((ArrayType) typeDeclaration.type()).size());
+                    }
                 }
 
                 @Override
@@ -80,8 +98,18 @@ public class SemanticAnalyzer {
                 }
 
                 @Override
+                public void visit(VariableDeclaration variableDeclaration) {
+                    if (variableDeclaration.type() instanceof IdentifierType) {
+                        usedIdentifiers.add(((IdentifierType) variableDeclaration.type()).identifier());
+                    }
+                }
+
+                @Override
                 public void visit(NestedRecordAccess identifier) {
                     usedIdentifiers.add(identifier.identifier());
+                    if (identifier.nestedAccess() != null) {
+                        identifier.nestedAccess().accept(this);
+                    }
                 }
 
                 @Override
@@ -90,6 +118,32 @@ public class SemanticAnalyzer {
                         statement.accept(this);
                     }
                 }
+
+                @Override
+                public void visit(CallStatement callStatement) {
+                    for (var param : callStatement.paramList()) {
+                        if (param instanceof NestedRecordAccess) {
+                            usedIdentifiers.add(((NestedRecordAccess) param).identifier());
+                            if (((NestedRecordAccess) param).nestedAccess() != null) {
+                                ((NestedRecordAccess) param).nestedAccess().accept(this);
+                            }
+                        }
+                        else if (param instanceof ArrayAccessExpression)
+                            usedIdentifiers.add(((ArrayAccessExpression) param).identifier());
+                        else if (param instanceof FunctionCallExpression) {
+                            usedIdentifiers.add(((FunctionCallExpression) param).functionName());
+                            for (var p : ((FunctionCallExpression) param).parameters()) {
+                                p.accept(this);
+                            }
+                        }
+
+                    }
+                }
+
+                @Override
+                public void visit(ArrayAccessExpression arrayAccessExpression) {
+                    usedIdentifiers.add(arrayAccessExpression.identifier());
+                }
             });
         } finally {
             System.setOut(originalOut);
@@ -97,25 +151,18 @@ public class SemanticAnalyzer {
     }
 
     private void filterUnusedStatements(Program program) {
-        program.units().removeIf(unit -> {
-            if (unit instanceof VariableDeclaration varDecl) {
-                return !usedIdentifiers.contains(varDecl.id());
-            } else if (unit instanceof TypeDeclaration typeDecl) {
-                return !usedIdentifiers.contains(typeDecl.id());
-            } else if (unit instanceof AssignmentStatement assignStmt) {
-                return !usedIdentifiers.contains(assignStmt.identifier());
-            } else if (unit instanceof Function functionDecl) {
-                functionDecl.decls().removeIf(declaration -> {
-                    if (declaration instanceof VariableDeclaration varDecl) {
-                        return !usedIdentifiers.contains(varDecl.id());
-                    }
-                    return false;
-                });
-                functionDecl.stmts().removeIf(statement -> {
-                    return false;
-                });
+        program.units().removeIf(unit -> switch (unit) {
+            case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+            case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+            case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
+            case Function functionDecl -> {
+                functionDecl.decls().removeIf(declaration ->
+                        declaration instanceof VariableDeclaration varDecl && !usedIdentifiers.contains(varDecl.id())
+                );
+                functionDecl.stmts().removeIf(statement -> false); // Здесь логика еще не определена
+                yield false; // Так как функции удалять не нужно, возвращаем false
             }
-            return false;
+            default -> false;
         });
     }
 }
