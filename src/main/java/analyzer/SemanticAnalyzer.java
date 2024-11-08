@@ -95,6 +95,9 @@ public class SemanticAnalyzer {
                         usedIdentifiers.add(assignmentStatement.identifier());
                         usedIdentifiers.add(assignmentStatement.recordField().getAccessPath().getLast());
                     }
+                    if (assignmentStatement.index() != null) {
+                        usedIdentifiers.add(assignmentStatement.identifier());
+                    }
                 }
 
                 @Override

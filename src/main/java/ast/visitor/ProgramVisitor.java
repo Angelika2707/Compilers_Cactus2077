@@ -372,10 +372,12 @@ public class ProgramVisitor implements Visitor {
                 if(function.returnType() != null) {
                     function.returnType().accept(this);
                 } else printIndented("null");
-                for (Statement statement : function.stmts()) {
-                    statement.accept(this);
-                }
             });
+
+            for (Statement statement : function.stmts()) {
+                statement.accept(this);
+            }
+
 
             for (Declaration declaration : function.decls()) {
                 declaration.accept(this);
