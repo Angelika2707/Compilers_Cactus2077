@@ -3,9 +3,7 @@ package analyzer;
 import ast.base.Program;
 import ast.declaration.TypeDeclaration;
 import ast.declaration.VariableDeclaration;
-import ast.expression.ArrayAccessExpression;
-import ast.expression.FunctionCallExpression;
-import ast.expression.NestedRecordAccess;
+import ast.expression.*;
 import ast.function.Function;
 import ast.statement.*;
 import ast.type.ArrayType;
@@ -49,7 +47,11 @@ public class SemanticAnalyzer {
                         arrHashmap.put(variableDeclaration.id(), ((ArrayType) variableDeclaration.type()).size());
                     } else if (variableDeclaration.expression() == null) {
                         if (variableDeclaration.type() instanceof IdentifierType) {
-                            declaredIdentifiers.add(((IdentifierType) variableDeclaration.type()).identifier());
+                            String identifier = ((IdentifierType) variableDeclaration.type()).identifier();
+                            declaredIdentifiers.add(identifier);
+                            if (arrHashmap.get(identifier) != null) {
+                                arrHashmap.put(variableDeclaration.id(), arrHashmap.get(identifier));
+                            }
                         }
                     }
                 }
@@ -97,6 +99,21 @@ public class SemanticAnalyzer {
                     }
                     if (assignmentStatement.index() != null) {
                         usedIdentifiers.add(assignmentStatement.identifier());
+                        switch (assignmentStatement.index()) {
+                            case IntegerLiteral integerLiteral -> {
+                                if (integerLiteral.value() < 1 || integerLiteral.value() > arrHashmap.get(assignmentStatement.identifier())) {
+                                    throw new ArrayIndexOutOfBoundsException("Index " + integerLiteral.value()
+                                            + " is out of bounds for array " + assignmentStatement.identifier() + ".");
+                                }
+                            }
+                            case RealLiteral realLiteral -> throw new
+                                    IllegalArgumentException("Invalid array index: real number "
+                                    + realLiteral.value() + " cannot be used as an array index.");
+                            case BooleanLiteral booleanLiteral -> throw new
+                                    IllegalArgumentException("Invalid array index: boolean value '"
+                                    + booleanLiteral.value() + "' cannot be used as an array index.");
+                            default -> {}
+                        }
                     }
                 }
 
@@ -179,6 +196,21 @@ public class SemanticAnalyzer {
                 @Override
                 public void visit(ArrayAccessExpression arrayAccessExpression) {
                     usedIdentifiers.add(arrayAccessExpression.identifier());
+                    switch (arrayAccessExpression.index()) {
+                        case IntegerLiteral integerLiteral -> {
+                            if (integerLiteral.value() < 1 || integerLiteral.value() > arrHashmap.get(arrayAccessExpression.identifier())) {
+                                throw new ArrayIndexOutOfBoundsException("Index " + integerLiteral.value()
+                                        + " is out of bounds for array " + arrayAccessExpression.identifier() + ".");
+                            }
+                        }
+                        case RealLiteral realLiteral -> throw new
+                                IllegalArgumentException("Invalid array index: real number "
+                                + realLiteral.value() + " cannot be used as an array index.");
+                        case BooleanLiteral booleanLiteral -> throw new
+                                IllegalArgumentException("Invalid array index: boolean value '"
+                                + booleanLiteral.value() + "' cannot be used as an array index.");
+                        default -> {}
+                    }
                 }
 
                 @Override
