@@ -4,6 +4,8 @@ import ast.declaration.Declaration;
 import ast.expression.Expression;
 import ast.visitor.Visitor;
 import lombok.Getter;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -26,9 +28,9 @@ public class IfStatement extends Statement {
     public IfStatement(Expression condition, List<Declaration> thenDecl, List<Statement> thenSt) {
         this.condition = condition;
         this.thenDeclarations = thenDecl;
-        this.elseDeclarations = null;
+        this.elseDeclarations = new ArrayList<>();
         this.thenStatements = thenSt;
-        this.elseStatements = null;
+        this.elseStatements = new ArrayList<>();
     }
 
     @Override

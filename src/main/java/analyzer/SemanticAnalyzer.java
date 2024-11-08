@@ -237,10 +237,7 @@ public class SemanticAnalyzer {
                     case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
                     default -> false;
                 });
-                whileStatement.statements().removeIf(statement -> switch (statement) {
-                    case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
-                    default -> false;
-                });
+                filterNestedStatements(whileStatement.statements());
                 yield false;
             }
             case ForStatement forStatement -> {
@@ -249,10 +246,7 @@ public class SemanticAnalyzer {
                     case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
                     default -> false;
                 });
-                forStatement.statements().removeIf(statement -> switch (statement) {
-                    case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
-                    default -> false;
-                });
+                filterNestedStatements(forStatement.statements());
                 yield false;
             }
             case IfStatement ifStatement -> {
@@ -263,34 +257,30 @@ public class SemanticAnalyzer {
                 });
                 ifStatement.elseDeclarations().removeIf(declaration -> switch (declaration) {
                     case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
-                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
                     default -> false;
                 });
-                ifStatement.thenStatements().removeIf(statement -> switch (statement) {
-                    case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
-                    default -> false;
-                });
-                ifStatement.elseStatements().removeIf(statement -> switch (statement) {
-                    case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
-                    default -> false;
-                });
+                filterNestedStatements(ifStatement.thenStatements());
+                filterNestedStatements(ifStatement.elseStatements());
                 yield false;
             }
             case ReturnStatement returnStatement -> {
-                switch (returnStatement.returnExpression()) {
-                    case NestedRecordAccess nestedRecordAccess: {
-                        if (!usedIdentifiers.contains(nestedRecordAccess.identifier())) {
-                            yield true;
-                        }
-                        if (nestedRecordAccess.nestedAccess() != null) {
-                            List<String> path = nestedRecordAccess.getAccessPath();
-                            for (var field: path) {
-                                if (!usedIdentifiers.contains(field)) yield true;
+                var expression = returnStatement.returnExpression();
+
+                if (expression instanceof NestedRecordAccess nestedRecordAccess) {
+                    if (!usedIdentifiers.contains(nestedRecordAccess.identifier())) {
+                        yield true;
+                    }
+                    if (nestedRecordAccess.nestedAccess() != null) {
+                        List<String> path = nestedRecordAccess.getAccessPath();
+                        for (var field : path) {
+                            if (!usedIdentifiers.contains(field)) {
+                                yield true;
                             }
                         }
                     }
-                    default: yield false;
                 }
+
+                yield false;
             }
             case Function functionDecl -> {
                 functionDecl.decls().removeIf(declaration -> switch (declaration) {
@@ -298,12 +288,54 @@ public class SemanticAnalyzer {
                     case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
                     default -> false;
                 });
-                functionDecl.stmts().removeIf(statement -> switch (statement) {
-                    case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
-                    default -> false;
-                });
+                filterNestedStatements(functionDecl.stmts());
                 yield !usedIdentifiers.contains(functionDecl.identifier());
             }
+
+            default -> false;
+        });
+    }
+
+    private void filterNestedStatements(List<Statement> statements) {
+        statements.removeIf(statement -> switch (statement) {
+            case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
+
+            case ForStatement nestedForStmt -> {
+                nestedForStmt.declarations().removeIf(declaration -> switch (declaration) {
+                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                    default -> false;
+                });
+                filterNestedStatements(nestedForStmt.statements());
+                yield false;
+            }
+
+            case WhileStatement nestedWhileStmt -> {
+                nestedWhileStmt.declarations().removeIf(declaration -> switch (declaration) {
+                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                    default -> false;
+                });
+                filterNestedStatements(nestedWhileStmt.statements());
+                yield false;
+            }
+
+            case IfStatement nestedIfStmt -> {
+                nestedIfStmt.thenDeclarations().removeIf(declaration -> switch (declaration) {
+                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                    default -> false;
+                });
+                nestedIfStmt.elseDeclarations().removeIf(declaration -> switch (declaration) {
+                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                    default -> false;
+                });
+                filterNestedStatements(nestedIfStmt.thenStatements());
+                filterNestedStatements(nestedIfStmt.elseStatements());
+                yield false;
+            }
+
             default -> false;
         });
     }
