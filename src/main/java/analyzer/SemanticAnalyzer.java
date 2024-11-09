@@ -1,5 +1,6 @@
 package analyzer;
 
+import ast.expression.Expression;
 import ast.base.Program;
 import ast.declaration.TypeDeclaration;
 import ast.declaration.VariableDeclaration;
@@ -9,6 +10,12 @@ import ast.statement.*;
 import ast.type.ArrayType;
 import ast.type.IdentifierType;
 import ast.visitor.ProgramVisitor;
+import org.apache.commons.jexl3.JexlEngine;
+import org.apache.commons.jexl3.JexlExpression;
+import org.apache.commons.jexl3.JexlContext;
+import org.apache.commons.jexl3.MapContext;
+import org.apache.commons.jexl3.JexlBuilder;
+
 
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -18,8 +25,10 @@ public class SemanticAnalyzer {
 
     private final Set<String> usedIdentifiers = new HashSet<>();
     private final Set<String> declaredIdentifiers = new HashSet<>();
+    private final Map<Expression, Expression> condsForSimplification = new HashMap<>();
     private final Map<String, Integer> arrHashmap = new HashMap<>();
     private boolean isInsideFunction = false;
+    private boolean noVariables = false;
 
     public Program analyze(Program program) {
         collectDeclaredIdentifiers(program);
@@ -128,6 +137,7 @@ public class SemanticAnalyzer {
                 @Override
                 public void visit(NestedRecordAccess identifier) {
                     usedIdentifiers.add(identifier.identifier());
+                    noVariables = false;
                     if (identifier.nestedAccess() != null) {
                         identifier.nestedAccess().accept(this);
                     }
@@ -166,7 +176,10 @@ public class SemanticAnalyzer {
 
                 @Override
                 public void visit(WhileStatement whileStatement) {
+                    noVariables = true;
                     whileStatement.condition().accept(this);
+                    if (noVariables) condsForSimplification.put(whileStatement.condition(), whileStatement.condition());
+                    noVariables = false;
                     for (var statement : whileStatement.statements()) {
                         statement.accept(this);
                     }
@@ -182,7 +195,10 @@ public class SemanticAnalyzer {
 
                 @Override
                 public void visit(IfStatement ifStatement) {
+                    noVariables = true;
                     ifStatement.condition().accept(this);
+                    if (noVariables) condsForSimplification.put(ifStatement.condition(), ifStatement.condition());
+                    noVariables = false;
                     for (var statement: ifStatement.thenStatements()) {
                         statement.accept(this);
                     }
@@ -267,6 +283,12 @@ public class SemanticAnalyzer {
                 });
                 filterNestedStatements(ifStatement.thenStatements());
                 filterNestedStatements(ifStatement.elseStatements());
+                String res = simplify(ifStatement.condition());
+                System.out.println(res);
+                JexlEngine jexl = new JexlBuilder().create();
+                JexlExpression expression = jexl.createExpression(res);
+                JexlContext context = new MapContext();
+                System.out.println(String.valueOf(expression.evaluate(context)));
                 yield false;
             }
             case ReturnStatement returnStatement -> {
@@ -344,5 +366,148 @@ public class SemanticAnalyzer {
 
             default -> false;
         });
+    }
+
+    private String simplify(Expression expression) {
+        PrintStream originalOut = System.out;
+        StringBuilder result = new StringBuilder();
+        System.setOut(new PrintStream(new OutputStream() {
+            @Override
+            public void write(int b) {
+            }
+        }));
+
+        try {
+            expression.accept(new ProgramVisitor() {
+                @Override
+                public void visit(BooleanLiteral booleanLiteral) {
+                    result.append(booleanLiteral.value());
+                }
+
+                @Override
+                public void visit(IntegerLiteral integerLiteral) {
+                    result.append(integerLiteral.value());
+                }
+
+                @Override
+                public void visit(RealLiteral realLiteral) {
+                    result.append(realLiteral.value());
+                }
+
+                @Override
+                public void visit(PlusExpression expression) {
+                    String left = simplify(expression.left());
+                    String right = simplify(expression.right());
+                    result.append(left).append(" ").append("+").append(" ").append(right);
+                }
+
+                @Override
+                public void visit(MinusExpression expression) {
+                    String left = simplify(expression.left());
+                    String right = simplify(expression.right());
+                    result.append(left).append(" ").append("-").append(" ").append(right);
+                }
+
+                @Override
+                public void visit(MulExpression expression) {
+                    String left = simplify(expression.left());
+                    String right = simplify(expression.right());
+                    result.append(left).append(" ").append("*").append(" ").append(right);
+                }
+
+                @Override
+                public void visit(DivExpression expression) {
+                    String left = simplify(expression.left());
+                    String right = simplify(expression.right());
+                    result.append(left).append(" ").append("/").append(" ").append(right);
+                }
+
+                @Override
+                public void visit(ModExpression expression) {
+                    String left = simplify(expression.left());
+                    String right = simplify(expression.right());
+                    result.append(left).append(" ").append("%").append(" ").append(right);
+                }
+
+                @Override
+                public void visit(ParenthesizedExpression expression) {
+                    String expr = simplify(expression.expr());
+                    result.append("(").append(expr).append(")");
+                }
+
+                @Override
+                public void visit(AndExpression expression) {
+                    String left = simplify(expression.left());
+                    String right = simplify(expression.right());
+                    result.append(left).append(" ").append("&&").append(" ").append(right);
+                }
+
+                @Override
+                public void visit(OrExpression expression) {
+                    String left = simplify(expression.left());
+                    String right = simplify(expression.right());
+                    result.append(left).append(" ").append("||").append(" ").append(right);
+                }
+
+                @Override
+                public void visit(XorExpression expression) {
+                    String left = simplify(expression.left());
+                    String right = simplify(expression.right());
+                    result.append(left).append(" ").append("^").append(" ").append(right);
+                }
+
+                @Override
+                public void visit(NotExpression expression) {
+                    String expr = simplify(expression.expr());
+                    result.append("!").append(expr);
+                }
+
+                @Override
+                public void visit(EqualExpression expression) {
+                    String left = simplify(expression.left());
+                    String right = simplify(expression.right());
+                    result.append(left).append(" ").append("==").append(" ").append(right);
+                }
+
+                @Override
+                public void visit(NotEqualExpression expression) {
+                    String left = simplify(expression.left());
+                    String right = simplify(expression.right());
+                    result.append(left).append(" ").append("!=").append(" ").append(right);
+                }
+
+                @Override
+                public void visit(LessThanExpression expression) {
+                    String left = simplify(expression.left());
+                    String right = simplify(expression.right());
+                    result.append(left).append(" ").append("<").append(" ").append(right);
+                }
+
+                @Override
+                public void visit(GreaterThanExpression expression) {
+                    String left = simplify(expression.left());
+                    String right = simplify(expression.right());
+                    result.append(left).append(" ").append(">").append(" ").append(right);
+                }
+
+                @Override
+                public void visit(LessEqualExpression expression) {
+                    String left = simplify(expression.left());
+                    String right = simplify(expression.right());
+                    result.append(left).append(" ").append("<=").append(" ").append(right);
+                }
+
+                @Override
+                public void visit(GreaterEqualExpression expression) {
+                    String left = simplify(expression.left());
+                    String right = simplify(expression.right());
+                    result.append(left).append(" ").append(">=").append(" ").append(right);
+                }
+            });
+        } finally {
+            System.setOut(originalOut);
+        }
+
+       return result.toString();
     }
 }
