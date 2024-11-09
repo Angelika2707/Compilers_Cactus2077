@@ -19,6 +19,7 @@ public class SemanticAnalyzer {
     private final Set<String> usedIdentifiers = new HashSet<>();
     private final Set<String> declaredIdentifiers = new HashSet<>();
     private final Map<String, Integer> arrHashmap = new HashMap<>();
+    private boolean isInsideFunction = false;
 
     public Program analyze(Program program) {
         collectDeclaredIdentifiers(program);
@@ -134,9 +135,11 @@ public class SemanticAnalyzer {
 
                 @Override
                 public void visit(Function functionDeclaration) {
+                    isInsideFunction = true;
                     for (var statement : functionDeclaration.stmts()) {
                         statement.accept(this);
                     }
+                    isInsideFunction = false;
                 }
 
                 @Override
@@ -190,6 +193,9 @@ public class SemanticAnalyzer {
 
                 @Override
                 public void visit(ReturnStatement returnStatement) {
+                    if (!isInsideFunction) {
+                        throw new IllegalStateException("Return statement found outside of a routine body.");
+                    }
                     returnStatement.returnExpression().accept(this);
                 }
 
