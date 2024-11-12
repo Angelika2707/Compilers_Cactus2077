@@ -1,5 +1,6 @@
 package analyzer;
 
+import ast.base.ProgramUnit;
 import ast.expression.Expression;
 import ast.base.Program;
 import ast.declaration.TypeDeclaration;
@@ -25,10 +26,11 @@ public class SemanticAnalyzer {
 
     private final Set<String> usedIdentifiers = new HashSet<>();
     private final Set<String> declaredIdentifiers = new HashSet<>();
-    private final Map<Expression, Expression> condsForSimplification = new HashMap<>();
+    private final Set<Expression> condsForSimplification = new HashSet<>();
     private final Map<String, Integer> arrHashmap = new HashMap<>();
+    JexlEngine jexl = new JexlBuilder().create();
     private boolean isInsideFunction = false;
-    private boolean noVariables = false;
+    private boolean noIdentifiers = false;
 
     public Program analyze(Program program) {
         collectDeclaredIdentifiers(program);
@@ -122,7 +124,8 @@ public class SemanticAnalyzer {
                             case BooleanLiteral booleanLiteral -> throw new
                                     IllegalArgumentException("Invalid array index: boolean value '"
                                     + booleanLiteral.value() + "' cannot be used as an array index.");
-                            default -> {}
+                            default -> {
+                            }
                         }
                     }
                 }
@@ -137,7 +140,7 @@ public class SemanticAnalyzer {
                 @Override
                 public void visit(NestedRecordAccess identifier) {
                     usedIdentifiers.add(identifier.identifier());
-                    noVariables = false;
+                    noIdentifiers = false;
                     if (identifier.nestedAccess() != null) {
                         identifier.nestedAccess().accept(this);
                     }
@@ -161,8 +164,7 @@ public class SemanticAnalyzer {
                             if (((NestedRecordAccess) param).nestedAccess() != null) {
                                 ((NestedRecordAccess) param).nestedAccess().accept(this);
                             }
-                        }
-                        else if (param instanceof ArrayAccessExpression)
+                        } else if (param instanceof ArrayAccessExpression)
                             usedIdentifiers.add(((ArrayAccessExpression) param).identifier());
                         else if (param instanceof FunctionCallExpression) {
                             usedIdentifiers.add(((FunctionCallExpression) param).functionName());
@@ -176,10 +178,10 @@ public class SemanticAnalyzer {
 
                 @Override
                 public void visit(WhileStatement whileStatement) {
-                    noVariables = true;
+                    noIdentifiers = true;
                     whileStatement.condition().accept(this);
-                    if (noVariables) condsForSimplification.put(whileStatement.condition(), whileStatement.condition());
-                    noVariables = false;
+                    if (noIdentifiers) condsForSimplification.add(whileStatement.condition());
+                    noIdentifiers = false;
                     for (var statement : whileStatement.statements()) {
                         statement.accept(this);
                     }
@@ -195,11 +197,11 @@ public class SemanticAnalyzer {
 
                 @Override
                 public void visit(IfStatement ifStatement) {
-                    noVariables = true;
+                    noIdentifiers = true;
                     ifStatement.condition().accept(this);
-                    if (noVariables) condsForSimplification.put(ifStatement.condition(), ifStatement.condition());
-                    noVariables = false;
-                    for (var statement: ifStatement.thenStatements()) {
+                    if (noIdentifiers) condsForSimplification.add(ifStatement.condition());
+                    noIdentifiers = false;
+                    for (var statement : ifStatement.thenStatements()) {
                         statement.accept(this);
                     }
                     for (var statement : ifStatement.elseStatements()) {
@@ -218,6 +220,7 @@ public class SemanticAnalyzer {
                 @Override
                 public void visit(ArrayAccessExpression arrayAccessExpression) {
                     usedIdentifiers.add(arrayAccessExpression.identifier());
+                    noIdentifiers = false;
                     switch (arrayAccessExpression.index()) {
                         case IntegerLiteral integerLiteral -> {
                             if (integerLiteral.value() < 1 || integerLiteral.value() > arrHashmap.get(arrayAccessExpression.identifier())) {
@@ -231,13 +234,15 @@ public class SemanticAnalyzer {
                         case BooleanLiteral booleanLiteral -> throw new
                                 IllegalArgumentException("Invalid array index: boolean value '"
                                 + booleanLiteral.value() + "' cannot be used as an array index.");
-                        default -> {}
+                        default -> {
+                        }
                     }
                 }
 
                 @Override
                 public void visit(FunctionCallExpression functionCallExpression) {
                     usedIdentifiers.add(functionCallExpression.functionName());
+                    noIdentifiers = false;
                     for (var param : functionCallExpression.parameters()) {
                         param.accept(this);
                     }
@@ -249,123 +254,278 @@ public class SemanticAnalyzer {
     }
 
     private void filterUnusedStatements(Program program) {
-        program.units().removeIf(unit -> switch (unit) {
-            case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
-            case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
-            case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
-            case WhileStatement whileStatement -> {
-                whileStatement.declarations().removeIf(declaration -> switch (declaration) {
-                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
-                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
-                    default -> false;
-                });
-                filterNestedStatements(whileStatement.statements());
-                yield false;
-            }
-            case ForStatement forStatement -> {
-                forStatement.declarations().removeIf(declaration -> switch (declaration) {
-                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
-                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
-                    default -> false;
-                });
-                filterNestedStatements(forStatement.statements());
-                yield false;
-            }
-            case IfStatement ifStatement -> {
-                ifStatement.thenDeclarations().removeIf(declaration -> switch (declaration) {
-                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
-                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
-                    default -> false;
-                });
-                ifStatement.elseDeclarations().removeIf(declaration -> switch (declaration) {
-                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
-                    default -> false;
-                });
-                filterNestedStatements(ifStatement.thenStatements());
-                filterNestedStatements(ifStatement.elseStatements());
-                String res = simplify(ifStatement.condition());
-                System.out.println(res);
-                JexlEngine jexl = new JexlBuilder().create();
-                JexlExpression expression = jexl.createExpression(res);
-                JexlContext context = new MapContext();
-                System.out.println(String.valueOf(expression.evaluate(context)));
-                yield false;
-            }
-            case ReturnStatement returnStatement -> {
-                var expression = returnStatement.returnExpression();
+        ListIterator<ProgramUnit> iterator = program.units().listIterator();
+        while (iterator.hasNext()) {
+            ProgramUnit unit = iterator.next();
 
-                if (expression instanceof NestedRecordAccess nestedRecordAccess) {
-                    if (!usedIdentifiers.contains(nestedRecordAccess.identifier())) {
-                        yield true;
+            switch (unit) {
+                case VariableDeclaration varDecl -> {
+                    if (!usedIdentifiers.contains(varDecl.id())) {
+                        iterator.remove();
                     }
-                    if (nestedRecordAccess.nestedAccess() != null) {
-                        List<String> path = nestedRecordAccess.getAccessPath();
-                        for (var field : path) {
-                            if (!usedIdentifiers.contains(field)) {
-                                yield true;
+                }
+
+                case TypeDeclaration typeDecl -> {
+                    if (!usedIdentifiers.contains(typeDecl.id())) {
+                        iterator.remove();
+                    }
+                }
+
+                case AssignmentStatement assignStmt -> {
+                    if (!usedIdentifiers.contains(assignStmt.identifier())) {
+                        iterator.remove();
+                    }
+                }
+
+                case WhileStatement whileStatement -> {
+                    whileStatement.declarations().removeIf(declaration -> switch (declaration) {
+                        case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                        case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                        default -> false;
+                    });
+
+                    if (condsForSimplification.contains(whileStatement.condition())) {
+                        String res = simplify(whileStatement.condition());
+                        JexlExpression expression = jexl.createExpression(res);
+                        JexlContext context = new MapContext();
+
+                        Object evalExpr = expression.evaluate(context);
+
+                        switch (evalExpr) {
+                            case Boolean b when !b -> iterator.remove();
+                            case Integer i when i == 0 -> iterator.remove();
+                            case Integer i -> throw new IllegalArgumentException("Invalid integer value in condition: "
+                                    + i + ". Expected 0 or 1.");
+                            case Double ignored ->
+                                    throw new IllegalArgumentException("Real values cannot be used in conditions.");
+                            default -> filterNestedStatements(whileStatement.statements());
+
+                        }
+                    } else filterNestedStatements(whileStatement.statements());
+                }
+
+                case ForStatement forStatement -> {
+                    forStatement.declarations().removeIf(declaration -> switch (declaration) {
+                        case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                        case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                        default -> false;
+                    });
+                    filterNestedStatements(forStatement.statements());
+                }
+
+                case IfStatement ifStatement -> {
+                    ifStatement.thenDeclarations().removeIf(declaration -> switch (declaration) {
+                        case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                        case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                        default -> false;
+                    });
+                    ifStatement.elseDeclarations().removeIf(declaration -> switch (declaration) {
+                        case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                        default -> false;
+                    });
+
+                    if (condsForSimplification.contains(ifStatement.condition())) {
+                        String res = simplify(ifStatement.condition());
+                        JexlExpression expression = jexl.createExpression(res);
+                        JexlContext context = new MapContext();
+
+                        List<ProgramUnit> newBody = new ArrayList<>();
+                        Object evalExpr = expression.evaluate(context);
+
+                        switch (evalExpr) {
+                            case Boolean b when b -> {
+                                filterNestedStatements(ifStatement.thenStatements());
+                                newBody.addAll(ifStatement.thenDeclarations());
+                                newBody.addAll(ifStatement.thenStatements());
+                            }
+                            case Boolean b when !b -> {
+                                filterNestedStatements(ifStatement.elseStatements());
+                                newBody.addAll(ifStatement.elseDeclarations());
+                                newBody.addAll(ifStatement.elseStatements());
+                            }
+                            case Integer i when i == 1 -> {
+                                filterNestedStatements(ifStatement.thenStatements());
+                                newBody.addAll(ifStatement.thenDeclarations());
+                                newBody.addAll(ifStatement.thenStatements());
+                            }
+                            case Integer i when i == 0 -> {
+                                filterNestedStatements(ifStatement.elseStatements());
+                                newBody.addAll(ifStatement.elseDeclarations());
+                                newBody.addAll(ifStatement.elseStatements());
+                            }
+                            case Integer i -> throw new IllegalArgumentException("Invalid integer value in condition: "
+                                    + i + ". Expected 0 or 1.");
+                            case Double ignored ->
+                                    throw new IllegalArgumentException("Real values cannot be used in conditions.");
+                            default -> {
+                            }
+                        }
+
+                        iterator.remove();
+                        for (ProgramUnit u : newBody) {
+                            iterator.add(u);
+                        }
+                    } else {
+                        filterNestedStatements(ifStatement.thenStatements());
+                        filterNestedStatements(ifStatement.elseStatements());
+                    }
+                }
+
+                case ReturnStatement returnStatement -> {
+                    var expression = returnStatement.returnExpression();
+
+                    if (expression instanceof NestedRecordAccess nestedRecordAccess) {
+                        if (!usedIdentifiers.contains(nestedRecordAccess.identifier())) {
+                            iterator.remove();
+                        }
+                        if (nestedRecordAccess.nestedAccess() != null) {
+                            List<String> path = nestedRecordAccess.getAccessPath();
+                            for (var field : path) {
+                                if (!usedIdentifiers.contains(field)) iterator.remove();
                             }
                         }
                     }
                 }
 
-                yield false;
-            }
-            case Function functionDecl -> {
-                functionDecl.decls().removeIf(declaration -> switch (declaration) {
-                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
-                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
-                    default -> false;
-                });
-                filterNestedStatements(functionDecl.stmts());
-                yield !usedIdentifiers.contains(functionDecl.identifier());
-            }
+                case Function functionDecl -> {
+                    functionDecl.decls().removeIf(declaration -> switch (declaration) {
+                        case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                        case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                        default -> false;
+                    });
+                    filterNestedStatements(functionDecl.stmts());
+                    if (!usedIdentifiers.contains(functionDecl.identifier())) {
+                        iterator.remove();
+                    }
+                }
 
-            default -> false;
-        });
+                default -> {
+                }
+            }
+        }
     }
 
     private void filterNestedStatements(List<Statement> statements) {
-        statements.removeIf(statement -> switch (statement) {
-            case AssignmentStatement assignStmt -> !usedIdentifiers.contains(assignStmt.identifier());
+        ListIterator<Statement> iterator = statements.listIterator();
+        while (iterator.hasNext()) {
+            Statement statement = iterator.next();
 
-            case ForStatement nestedForStmt -> {
-                nestedForStmt.declarations().removeIf(declaration -> switch (declaration) {
-                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
-                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
-                    default -> false;
-                });
-                filterNestedStatements(nestedForStmt.statements());
-                yield false;
+            switch (statement) {
+                case AssignmentStatement assignStmt -> {
+                    if (!usedIdentifiers.contains(assignStmt.identifier())) {
+                        iterator.remove();
+                    }
+                }
+
+                case WhileStatement whileStatement -> {
+                    whileStatement.declarations().removeIf(declaration -> switch (declaration) {
+                        case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                        case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                        default -> false;
+                    });
+
+                    if (condsForSimplification.contains(whileStatement.condition())) {
+                        String res = simplify(whileStatement.condition());
+                        JexlExpression expression = jexl.createExpression(res);
+                        JexlContext context = new MapContext();
+
+                        Object evalExpr = expression.evaluate(context);
+
+                        switch (evalExpr) {
+                            case Boolean b when !b -> iterator.remove();
+                            case Integer i when i == 0 -> iterator.remove();
+                            case Integer i -> throw new IllegalArgumentException("Invalid integer value in condition: "
+                                    + i + ". Expected 0 or 1.");
+                            case Double ignored ->
+                                    throw new IllegalArgumentException("Real values cannot be used in conditions.");
+                            default -> filterNestedStatements(whileStatement.statements());
+                        }
+                    } else filterNestedStatements(whileStatement.statements());
+                }
+
+                case ForStatement forStatement -> {
+                    forStatement.declarations().removeIf(declaration -> switch (declaration) {
+                        case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                        case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                        default -> false;
+                    });
+                    filterNestedStatements(forStatement.statements());
+                }
+
+                case IfStatement ifStatement -> {
+                    ifStatement.thenDeclarations().removeIf(declaration -> switch (declaration) {
+                        case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                        case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
+                        default -> false;
+                    });
+                    ifStatement.elseDeclarations().removeIf(declaration -> switch (declaration) {
+                        case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
+                        default -> false;
+                    });
+
+                    if (condsForSimplification.contains(ifStatement.condition())) {
+                        String res = simplify(ifStatement.condition());
+                        JexlExpression expression = jexl.createExpression(res);
+                        JexlContext context = new MapContext();
+
+                        List<Statement> newStatements = new ArrayList<>();
+                        Object evalExpr = expression.evaluate(context);
+
+                        switch (evalExpr) {
+                            case Boolean b when b -> {
+                                filterNestedStatements(ifStatement.thenStatements());
+                                newStatements.addAll(ifStatement.thenStatements());
+                            }
+                            case Boolean b when !b -> {
+                                filterNestedStatements(ifStatement.elseStatements());
+                                newStatements.addAll(ifStatement.elseStatements());
+                            }
+                            case Integer i when i == 1 -> {
+                                filterNestedStatements(ifStatement.thenStatements());
+                                newStatements.addAll(ifStatement.thenStatements());
+                            }
+                            case Integer i when i == 0 -> {
+                                filterNestedStatements(ifStatement.elseStatements());
+                                newStatements.addAll(ifStatement.elseStatements());
+                            }
+                            case Integer i -> throw new IllegalArgumentException("Invalid integer value in condition: "
+                                    + i + ". Expected 0 or 1.");
+                            case Double ignored ->
+                                    throw new IllegalArgumentException("Real values cannot be used in conditions.");
+                            default -> {
+                            }
+                        }
+
+                        iterator.remove();
+                        for (Statement newStmt : newStatements) {
+                            iterator.add(newStmt);
+                        }
+                    } else {
+                        filterNestedStatements(ifStatement.thenStatements());
+                        filterNestedStatements(ifStatement.elseStatements());
+                    }
+                }
+
+                case ReturnStatement returnStatement -> {
+                    var expression = returnStatement.returnExpression();
+
+                    if (expression instanceof NestedRecordAccess nestedRecordAccess) {
+                        if (!usedIdentifiers.contains(nestedRecordAccess.identifier())) {
+                            iterator.remove();
+                        }
+                        if (nestedRecordAccess.nestedAccess() != null) {
+                            List<String> path = nestedRecordAccess.getAccessPath();
+                            for (var field : path) {
+                                if (!usedIdentifiers.contains(field)) iterator.remove();
+                            }
+                        }
+                    }
+                }
+
+                default -> {
+                }
             }
-
-            case WhileStatement nestedWhileStmt -> {
-                nestedWhileStmt.declarations().removeIf(declaration -> switch (declaration) {
-                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
-                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
-                    default -> false;
-                });
-                filterNestedStatements(nestedWhileStmt.statements());
-                yield false;
-            }
-
-            case IfStatement nestedIfStmt -> {
-                nestedIfStmt.thenDeclarations().removeIf(declaration -> switch (declaration) {
-                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
-                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
-                    default -> false;
-                });
-                nestedIfStmt.elseDeclarations().removeIf(declaration -> switch (declaration) {
-                    case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
-                    case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
-                    default -> false;
-                });
-                filterNestedStatements(nestedIfStmt.thenStatements());
-                filterNestedStatements(nestedIfStmt.elseStatements());
-                yield false;
-            }
-
-            default -> false;
-        });
+        }
     }
 
     private String simplify(Expression expression) {
@@ -508,6 +668,6 @@ public class SemanticAnalyzer {
             System.setOut(originalOut);
         }
 
-       return result.toString();
+        return result.toString();
     }
 }
