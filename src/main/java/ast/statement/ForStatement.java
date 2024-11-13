@@ -1,6 +1,6 @@
 package ast.statement;
 
-import ast.declaration.Declaration;
+import ast.base.Body;
 import ast.expression.Expression;
 import ast.visitor.Visitor;
 import lombok.Getter;
@@ -13,18 +13,15 @@ public class ForStatement extends Statement {
     private final Expression startExpression;
     private final Expression endExpression;
     private final boolean isReverse;
-    private final List<Declaration> declarations;
-    private final List<Statement> statements;
+    private final List<Body> body;
 
     public ForStatement(String loopVariable, Expression startExpr, Expression endExpr,
-                        boolean isReverse, List<Declaration> declarations,
-                        List<Statement> statements) {
+                        boolean isReverse, List<Body> body) {
         this.loopVariable = loopVariable;
         this.startExpression = startExpr;
         this.endExpression = endExpr;
         this.isReverse = isReverse;
-        this.declarations = declarations;
-        this.statements = statements;
+        this.body = body;
     }
     @Override
     public void accept(Visitor visitor) {

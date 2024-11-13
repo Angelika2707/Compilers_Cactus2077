@@ -1,5 +1,5 @@
 package ast.statement;
 
-import ast.base.ProgramUnit;
+import ast.base.Body;
 
-public abstract class Statement extends ProgramUnit {}
+public abstract class Statement extends Body {}

@@ -1,5 +1,6 @@
 package ast.visitor;
 
+import ast.base.Body;
 import ast.base.Program;
 import ast.base.ProgramUnit;
 import ast.declaration.Declaration;
@@ -11,8 +12,6 @@ import ast.function.Parameter;
 import ast.statement.*;
 import ast.type.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class ProgramVisitor implements Visitor {
@@ -20,7 +19,7 @@ public class ProgramVisitor implements Visitor {
 
     private void printIndented(String text) {
         for (int i = 0; i < indentLevel; i++) {
-            System.out.print("  "); // Два пробела на каждый уровень отступа
+            System.out.print("  ");
         }
         System.out.println(text);
     }
@@ -91,13 +90,11 @@ public class ProgramVisitor implements Visitor {
     public void visit(ForStatement forStatement) {
         printIndented("ForStatement: " + forStatement.loopVariable());
         increaseIndent(() -> {
+            if (forStatement.isReverse()) printIndented("Reverse");
             forStatement.startExpression().accept(this);
             forStatement.endExpression().accept(this);
-            for (Declaration declaration : forStatement.declarations()) {
-                declaration.accept(this);
-            }
-            for (Statement statement : forStatement.statements()) {
-                statement.accept(this);
+            for (Body unit : forStatement.body()) {
+                unit.accept(this);
             }
         });
     }
@@ -107,22 +104,15 @@ public class ProgramVisitor implements Visitor {
         printIndented("IfStatement:");
         increaseIndent(() -> {
             ifStatement.condition().accept(this);
-            for (Statement statement : ifStatement.thenStatements()) {
-                statement.accept(this);
+            for (Body unit : ifStatement.thenBody()) {
+                unit.accept(this);
             }
 
-            for (Declaration declaration : ifStatement.thenDeclarations()) {
-                declaration.accept(this);
-            }
-
-            if (!ifStatement.elseStatements().isEmpty() || !ifStatement.elseDeclarations().isEmpty()) {
+            if (!ifStatement.elseBody().isEmpty()) {
                 printIndented("Else:");
                 increaseIndent(() -> {
-                    for (Declaration declaration : ifStatement.elseDeclarations()) {
-                        declaration.accept(this);
-                    }
-                    for (Statement statement : ifStatement.elseStatements()) {
-                        statement.accept(this);
+                    for (Body unit : ifStatement.elseBody()) {
+                        unit.accept(this);
                     }
                 });
             }
@@ -142,11 +132,8 @@ public class ProgramVisitor implements Visitor {
         printIndented("WhileStatement:");
         increaseIndent(() -> {
             whileStatement.condition().accept(this);
-            for (Statement statement : whileStatement.statements()) {
-                statement.accept(this);
-            }
-            for (Declaration declarations : whileStatement.declarations()) {
-                declarations.accept(this);
+            for (Body unit : whileStatement.body()) {
+                unit.accept(this);
             }
         });
     }
@@ -374,13 +361,8 @@ public class ProgramVisitor implements Visitor {
                 } else printIndented("null");
             });
 
-            for (Statement statement : function.stmts()) {
-                statement.accept(this);
-            }
-
-
-            for (Declaration declaration : function.decls()) {
-                declaration.accept(this);
+            for (Body unit : function.body()) {
+                unit.accept(this);
             }
         });
     }

@@ -1,5 +1,6 @@
 package analyzer;
 
+import ast.base.Body;
 import ast.base.ProgramUnit;
 import ast.expression.Expression;
 import ast.base.Program;
@@ -25,10 +26,9 @@ import java.util.*;
 public class SemanticAnalyzer {
 
     private final Set<String> usedIdentifiers = new HashSet<>();
-    private final Set<String> declaredIdentifiers = new HashSet<>();
     private final Set<Expression> condsForSimplification = new HashSet<>();
     private final Map<String, Integer> arrHashmap = new HashMap<>();
-    JexlEngine jexl = new JexlBuilder().create();
+    private final JexlEngine jexl = new JexlBuilder().create();
     private boolean isInsideFunction = false;
     private boolean noIdentifiers = false;
 
@@ -54,13 +54,11 @@ public class SemanticAnalyzer {
             program.accept(new ProgramVisitor() {
                 @Override
                 public void visit(VariableDeclaration variableDeclaration) {
-                    declaredIdentifiers.add(variableDeclaration.id());
                     if (variableDeclaration.type() instanceof ArrayType) {
                         arrHashmap.put(variableDeclaration.id(), ((ArrayType) variableDeclaration.type()).size());
                     } else if (variableDeclaration.expression() == null) {
                         if (variableDeclaration.type() instanceof IdentifierType) {
                             String identifier = ((IdentifierType) variableDeclaration.type()).identifier();
-                            declaredIdentifiers.add(identifier);
                             if (arrHashmap.get(identifier) != null) {
                                 arrHashmap.put(variableDeclaration.id(), arrHashmap.get(identifier));
                             }
@@ -70,18 +68,8 @@ public class SemanticAnalyzer {
 
                 @Override
                 public void visit(TypeDeclaration typeDeclaration) {
-                    declaredIdentifiers.add(typeDeclaration.id());
                     if (typeDeclaration.type() instanceof ArrayType) {
                         arrHashmap.put(typeDeclaration.id(), ((ArrayType) typeDeclaration.type()).size());
-                    }
-                }
-
-                @Override
-                public void visit(Function functionDeclaration) {
-                    for (var declaration : functionDeclaration.decls()) {
-                        if (declaration instanceof VariableDeclaration varDecl) {
-                            declaredIdentifiers.add(varDecl.id());
-                        }
                     }
                 }
             });
@@ -149,8 +137,10 @@ public class SemanticAnalyzer {
                 @Override
                 public void visit(Function functionDeclaration) {
                     isInsideFunction = true;
-                    for (var statement : functionDeclaration.stmts()) {
-                        statement.accept(this);
+                    for (var element : functionDeclaration.body()) {
+                        if (element instanceof Statement statement) {
+                            statement.accept(this);
+                        }
                     }
                     isInsideFunction = false;
                 }
@@ -182,16 +172,20 @@ public class SemanticAnalyzer {
                     whileStatement.condition().accept(this);
                     if (noIdentifiers) condsForSimplification.add(whileStatement.condition());
                     noIdentifiers = false;
-                    for (var statement : whileStatement.statements()) {
-                        statement.accept(this);
+                    for (var element : whileStatement.body()) {
+                        if (element instanceof Statement statement) {
+                            statement.accept(this);
+                        }
                     }
                 }
 
                 @Override
                 public void visit(ForStatement forStatement) {
                     usedIdentifiers.add(forStatement.loopVariable());
-                    for (var statement : forStatement.statements()) {
-                        statement.accept(this);
+                    for (var element : forStatement.body()) {
+                        if (element instanceof Statement statement) {
+                            statement.accept(this);
+                        }
                     }
                 }
 
@@ -201,11 +195,15 @@ public class SemanticAnalyzer {
                     ifStatement.condition().accept(this);
                     if (noIdentifiers) condsForSimplification.add(ifStatement.condition());
                     noIdentifiers = false;
-                    for (var statement : ifStatement.thenStatements()) {
-                        statement.accept(this);
+                    for (var element : ifStatement.thenBody()) {
+                        if (element instanceof Statement statement) {
+                            statement.accept(this);
+                        }
                     }
-                    for (var statement : ifStatement.elseStatements()) {
-                        statement.accept(this);
+                    for (var element : ifStatement.elseBody()) {
+                        if (element instanceof Statement statement) {
+                            statement.accept(this);
+                        }
                     }
                 }
 
@@ -278,7 +276,7 @@ public class SemanticAnalyzer {
                 }
 
                 case WhileStatement whileStatement -> {
-                    whileStatement.declarations().removeIf(declaration -> switch (declaration) {
+                    whileStatement.body().removeIf(element -> switch (element) {
                         case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
                         case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
                         default -> false;
@@ -298,28 +296,28 @@ public class SemanticAnalyzer {
                                     + i + ". Expected 0 or 1.");
                             case Double ignored ->
                                     throw new IllegalArgumentException("Real values cannot be used in conditions.");
-                            default -> filterNestedStatements(whileStatement.statements());
+                            default -> filterNestedStatements(whileStatement.body());
 
                         }
-                    } else filterNestedStatements(whileStatement.statements());
+                    } else filterNestedStatements(whileStatement.body());
                 }
 
                 case ForStatement forStatement -> {
-                    forStatement.declarations().removeIf(declaration -> switch (declaration) {
+                    forStatement.body().removeIf(element -> switch (element) {
                         case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
                         case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
                         default -> false;
                     });
-                    filterNestedStatements(forStatement.statements());
+                    filterNestedStatements(forStatement.body());
                 }
 
                 case IfStatement ifStatement -> {
-                    ifStatement.thenDeclarations().removeIf(declaration -> switch (declaration) {
+                    ifStatement.thenBody().removeIf(element -> switch (element) {
                         case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
                         case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
                         default -> false;
                     });
-                    ifStatement.elseDeclarations().removeIf(declaration -> switch (declaration) {
+                    ifStatement.elseBody().removeIf(element -> switch (element) {
                         case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
                         default -> false;
                     });
@@ -329,29 +327,25 @@ public class SemanticAnalyzer {
                         JexlExpression expression = jexl.createExpression(res);
                         JexlContext context = new MapContext();
 
-                        List<ProgramUnit> newBody = new ArrayList<>();
+                        List<Body> newBody = new ArrayList<>();
                         Object evalExpr = expression.evaluate(context);
 
                         switch (evalExpr) {
                             case Boolean b when b -> {
-                                filterNestedStatements(ifStatement.thenStatements());
-                                newBody.addAll(ifStatement.thenDeclarations());
-                                newBody.addAll(ifStatement.thenStatements());
+                                filterNestedStatements(ifStatement.thenBody());
+                                newBody.addAll(ifStatement.thenBody());
                             }
                             case Boolean b when !b -> {
-                                filterNestedStatements(ifStatement.elseStatements());
-                                newBody.addAll(ifStatement.elseDeclarations());
-                                newBody.addAll(ifStatement.elseStatements());
+                                filterNestedStatements(ifStatement.elseBody());
+                                newBody.addAll(ifStatement.elseBody());
                             }
                             case Integer i when i == 1 -> {
-                                filterNestedStatements(ifStatement.thenStatements());
-                                newBody.addAll(ifStatement.thenDeclarations());
-                                newBody.addAll(ifStatement.thenStatements());
+                                filterNestedStatements(ifStatement.thenBody());
+                                newBody.addAll(ifStatement.thenBody());
                             }
                             case Integer i when i == 0 -> {
-                                filterNestedStatements(ifStatement.elseStatements());
-                                newBody.addAll(ifStatement.elseDeclarations());
-                                newBody.addAll(ifStatement.elseStatements());
+                                filterNestedStatements(ifStatement.elseBody());
+                                newBody.addAll(ifStatement.elseBody());
                             }
                             case Integer i -> throw new IllegalArgumentException("Invalid integer value in condition: "
                                     + i + ". Expected 0 or 1.");
@@ -362,12 +356,12 @@ public class SemanticAnalyzer {
                         }
 
                         iterator.remove();
-                        for (ProgramUnit u : newBody) {
+                        for (Body u : newBody) {
                             iterator.add(u);
                         }
                     } else {
-                        filterNestedStatements(ifStatement.thenStatements());
-                        filterNestedStatements(ifStatement.elseStatements());
+                        filterNestedStatements(ifStatement.thenBody());
+                        filterNestedStatements(ifStatement.elseBody());
                     }
                 }
 
@@ -388,12 +382,12 @@ public class SemanticAnalyzer {
                 }
 
                 case Function functionDecl -> {
-                    functionDecl.decls().removeIf(declaration -> switch (declaration) {
+                    functionDecl.body().removeIf(element -> switch (element) {
                         case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
                         case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
                         default -> false;
                     });
-                    filterNestedStatements(functionDecl.stmts());
+                    filterNestedStatements(functionDecl.body());
                     if (!usedIdentifiers.contains(functionDecl.identifier())) {
                         iterator.remove();
                     }
@@ -405,10 +399,14 @@ public class SemanticAnalyzer {
         }
     }
 
-    private void filterNestedStatements(List<Statement> statements) {
-        ListIterator<Statement> iterator = statements.listIterator();
+    private void filterNestedStatements(List<Body> body) {
+        ListIterator<Body> iterator = body.listIterator();
         while (iterator.hasNext()) {
-            Statement statement = iterator.next();
+            Body el = iterator.next();
+
+            if (!(el instanceof Statement statement)) {
+                continue;
+            }
 
             switch (statement) {
                 case AssignmentStatement assignStmt -> {
@@ -418,7 +416,7 @@ public class SemanticAnalyzer {
                 }
 
                 case WhileStatement whileStatement -> {
-                    whileStatement.declarations().removeIf(declaration -> switch (declaration) {
+                    whileStatement.body().removeIf(element -> switch (element) {
                         case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
                         case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
                         default -> false;
@@ -438,27 +436,27 @@ public class SemanticAnalyzer {
                                     + i + ". Expected 0 or 1.");
                             case Double ignored ->
                                     throw new IllegalArgumentException("Real values cannot be used in conditions.");
-                            default -> filterNestedStatements(whileStatement.statements());
+                            default -> filterNestedStatements(whileStatement.body());
                         }
-                    } else filterNestedStatements(whileStatement.statements());
+                    } else filterNestedStatements(whileStatement.body());
                 }
 
                 case ForStatement forStatement -> {
-                    forStatement.declarations().removeIf(declaration -> switch (declaration) {
+                    forStatement.body().removeIf(element -> switch (element) {
                         case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
                         case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
                         default -> false;
                     });
-                    filterNestedStatements(forStatement.statements());
+                    filterNestedStatements(forStatement.body());
                 }
 
                 case IfStatement ifStatement -> {
-                    ifStatement.thenDeclarations().removeIf(declaration -> switch (declaration) {
+                    ifStatement.thenBody().removeIf(element -> switch (element) {
                         case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
                         case TypeDeclaration typeDecl -> !usedIdentifiers.contains(typeDecl.id());
                         default -> false;
                     });
-                    ifStatement.elseDeclarations().removeIf(declaration -> switch (declaration) {
+                    ifStatement.elseBody().removeIf(element -> switch (element) {
                         case VariableDeclaration varDecl -> !usedIdentifiers.contains(varDecl.id());
                         default -> false;
                     });
@@ -468,25 +466,25 @@ public class SemanticAnalyzer {
                         JexlExpression expression = jexl.createExpression(res);
                         JexlContext context = new MapContext();
 
-                        List<Statement> newStatements = new ArrayList<>();
+                        List<Body> newBody = new ArrayList<>();
                         Object evalExpr = expression.evaluate(context);
 
                         switch (evalExpr) {
                             case Boolean b when b -> {
-                                filterNestedStatements(ifStatement.thenStatements());
-                                newStatements.addAll(ifStatement.thenStatements());
+                                filterNestedStatements(ifStatement.thenBody());
+                                newBody.addAll(ifStatement.thenBody());
                             }
                             case Boolean b when !b -> {
-                                filterNestedStatements(ifStatement.elseStatements());
-                                newStatements.addAll(ifStatement.elseStatements());
+                                filterNestedStatements(ifStatement.elseBody());
+                                newBody.addAll(ifStatement.elseBody());
                             }
                             case Integer i when i == 1 -> {
-                                filterNestedStatements(ifStatement.thenStatements());
-                                newStatements.addAll(ifStatement.thenStatements());
+                                filterNestedStatements(ifStatement.thenBody());
+                                newBody.addAll(ifStatement.thenBody());
                             }
                             case Integer i when i == 0 -> {
-                                filterNestedStatements(ifStatement.elseStatements());
-                                newStatements.addAll(ifStatement.elseStatements());
+                                filterNestedStatements(ifStatement.elseBody());
+                                newBody.addAll(ifStatement.elseBody());
                             }
                             case Integer i -> throw new IllegalArgumentException("Invalid integer value in condition: "
                                     + i + ". Expected 0 or 1.");
@@ -497,12 +495,12 @@ public class SemanticAnalyzer {
                         }
 
                         iterator.remove();
-                        for (Statement newStmt : newStatements) {
-                            iterator.add(newStmt);
+                        for (Body u : newBody) {
+                            iterator.add(u);
                         }
                     } else {
-                        filterNestedStatements(ifStatement.thenStatements());
-                        filterNestedStatements(ifStatement.elseStatements());
+                        filterNestedStatements(ifStatement.thenBody());
+                        filterNestedStatements(ifStatement.elseBody());
                     }
                 }
 

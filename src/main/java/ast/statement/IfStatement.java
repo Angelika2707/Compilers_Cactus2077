@@ -1,6 +1,6 @@
 package ast.statement;
 
-import ast.declaration.Declaration;
+import ast.base.Body;
 import ast.expression.Expression;
 import ast.visitor.Visitor;
 import lombok.Getter;
@@ -11,26 +11,19 @@ import java.util.List;
 @Getter
 public class IfStatement extends Statement {
     private final Expression condition;
-    private final List<Declaration> thenDeclarations;
-    private final List<Declaration> elseDeclarations;
-    private final List<Statement> thenStatements;
-    private final List<Statement> elseStatements;
+    private final List<Body> thenBody;
+    private final List<Body> elseBody;
 
-    public IfStatement(Expression condition, List<Declaration> thenDecl, List<Declaration> elseDecl,
-                       List<Statement> thenSt, List<Statement> elseSt) {
+    public IfStatement(Expression condition, List<Body> thenBody, List<Body> elseBody) {
         this.condition = condition;
-        this.thenDeclarations = thenDecl;
-        this.elseDeclarations = elseDecl;
-        this.thenStatements = thenSt;
-        this.elseStatements = elseSt;
+        this.thenBody = thenBody;
+        this.elseBody = elseBody;
     }
 
-    public IfStatement(Expression condition, List<Declaration> thenDecl, List<Statement> thenSt) {
+    public IfStatement(Expression condition, List<Body> thenBody) {
         this.condition = condition;
-        this.thenDeclarations = thenDecl;
-        this.elseDeclarations = new ArrayList<>();
-        this.thenStatements = thenSt;
-        this.elseStatements = new ArrayList<>();
+        this.thenBody = thenBody;
+        this.elseBody = new ArrayList<>();
     }
 
     @Override

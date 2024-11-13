@@ -5,9 +5,6 @@ import ast.expression.NestedRecordAccess;
 import ast.visitor.Visitor;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Getter
 public class AssignmentStatement extends Statement {
     private final String identifier;

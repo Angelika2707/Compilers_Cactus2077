@@ -27,7 +27,6 @@ non terminal Declaration;
 non terminal VariableDeclaration;
 non terminal TypeDeclaration;
 non terminal Statement;
-non terminal StatementList;
 non terminal Expression;
 non terminal Type;
 non terminal Function;
@@ -38,6 +37,8 @@ non terminal ProgramUnits;
 non terminal DeclParamList;
 non terminal CallParamList;
 non terminal FuncParamList;
+non terminal Body;
+non terminal BodyList;
 
 /* Define precedences */
 precedence left OR, AND, XOR;
@@ -87,14 +88,16 @@ Type ::= INTEGER {: RESULT = new IntegerType(); :}
        | ARRAY LBRACKET INTEGERNUM:size RBRACKET Type:elemType {: RESULT = new ArrayType((Integer) size, (Type) elemType); :}
        | RECORD DeclarationList:fields END {: RESULT = new RecordType((List<Declaration>) fields); :};
 
-StatementList ::= Statement:statement StatementList:list
-                {:
-                    List<Statement> statements = new ArrayList<>();
-                    statements.add((Statement) statement);
-                    statements.addAll((List<Statement>) list);
-                    RESULT = statements;
-                :}
-                | /* empty */ {: RESULT = new ArrayList<Statement>(); :};
+BodyList ::= Body:item BodyList:list {:
+                 List<Body> items = new ArrayList<>();
+                 items.add((Body) item);
+                 items.addAll((List<Body>) list);
+                 RESULT = items;
+             :}
+           | /* empty */ {: RESULT = new ArrayList<Body>(); :};
+
+Body ::= Declaration:decl {: RESULT = decl; :}
+        | Statement:stmt {: RESULT = stmt; :};
 
 Statement ::= IDENTIFIER:id ASSIGN Expression:expr SEMICOLON
             {: RESULT = new AssignmentStatement((String) id, (Expression) expr); :}
@@ -104,16 +107,16 @@ Statement ::= IDENTIFIER:id ASSIGN Expression:expr SEMICOLON
             {: RESULT = new AssignmentStatement((NestedRecordAccess) recordField, (String) id, (Expression) expr); :}
             | IDENTIFIER:id LPAREN ParamList:paramList RPAREN SEMICOLON
             {: RESULT = new CallStatement((String) id, (List<Expression>) paramList); :}
-            | IF Expression:cond THEN DeclarationList:decls StatementList:stmts END SEMICOLON
-            {: RESULT = new IfStatement((Expression) cond, (List<Declaration>) decls, (List<Statement>) stmts); :}
-            | IF Expression:cond THEN DeclarationList:declsThen StatementList:stmtsThen ELSE DeclarationList:declsElse StatementList:stmtsElse END SEMICOLON
-            {: RESULT = new IfStatement((Expression) cond, (List<Declaration>) declsThen, (List<Declaration>) declsElse, (List<Statement>) stmtsThen, (List<Statement>) stmtsElse); :}
-            | WHILE Expression:cond LOOP DeclarationList:decls StatementList:stmts END SEMICOLON
-            {: RESULT = new WhileStatement((Expression) cond, (List<Declaration>) decls, (List<Statement>) stmts); :}
-            | FOR IDENTIFIER:id IN Expression:start RANGE Expression:end LOOP DeclarationList:decls StatementList:stmts END SEMICOLON
-            {:  RESULT = new ForStatement((String) id, (Expression) start, (Expression) end, false, (List<Declaration>) decls, (List<Statement>) stmts); :}
-            | FOR IDENTIFIER:id IN REVERSE Expression:start RANGE Expression:end LOOP DeclarationList:decls StatementList:stmts END SEMICOLON
-            {:  RESULT = new ForStatement((String) id, (Expression) start, (Expression) end, true, (List<Declaration>) decls, (List<Statement>) stmts); :}
+            | IF Expression:cond THEN BodyList:thenBody END SEMICOLON
+            {: RESULT = new IfStatement((Expression) cond, (List<Body>) thenBody); :}
+            | IF Expression:cond THEN BodyList:thenBody ELSE BodyList:elseBody END SEMICOLON
+            {: RESULT = new IfStatement((Expression) cond, (List<Body>) thenBody, (List<Body>) elseBody); :}
+            | WHILE Expression:cond LOOP BodyList:body END SEMICOLON
+            {: RESULT = new WhileStatement((Expression) cond, (List<Body>) body); :}
+            | FOR IDENTIFIER:id IN Expression:start RANGE Expression:end LOOP BodyList:body END SEMICOLON
+            {:  RESULT = new ForStatement((String) id, (Expression) start, (Expression) end, false, (List<Body>) body); :}
+            | FOR IDENTIFIER:id IN REVERSE Expression:start RANGE Expression:end LOOP BodyList:body END SEMICOLON
+            {:  RESULT = new ForStatement((String) id, (Expression) start, (Expression) end, true, (List<Body>) body); :}
             | RETURN Expression:expr SEMICOLON
             {: RESULT = new ReturnStatement((Expression) expr); :};
 
@@ -144,8 +147,8 @@ Expression ::= Expression:left PLUS Expression:right {: RESULT = new PlusExpress
 NestedRecordAccess ::= IDENTIFIER:id {: RESULT = new NestedRecordAccess((String) id); :}
              | NestedRecordAccess:rec DOT IDENTIFIER:id {: RESULT = new NestedRecordAccess((NestedRecordAccess) rec, (String) id); :};
 
-Function ::= ROUTINE IDENTIFIER:id LPAREN FuncParamList:params RPAREN ReturnTypeOpt:returnType IS DeclarationList:decls StatementList:stmts END SEMICOLON
-            {: RESULT = new Function((String) id, (List<Parameter>) params, (Type) returnType, (List<Declaration>) decls, (List<Statement>) stmts); :};
+Function ::= ROUTINE IDENTIFIER:id LPAREN FuncParamList:params RPAREN ReturnTypeOpt:returnType IS BodyList:body END SEMICOLON
+            {: RESULT = new Function((String) id, (List<Parameter>) params, (Type) returnType, (List<Body>) body); :};
 
 ParamList ::= /* empty */ {: RESULT = new ArrayList<Parameter>(); :}
           | CallParamList:callList {: RESULT = callList; :};
