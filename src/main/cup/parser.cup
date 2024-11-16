@@ -1,0 +1,180 @@
+package parser;
+
+import java_cup.runtime.*;
+import ast.base.*;
+import ast.declaration.*;
+import ast.expression.*;
+import ast.function.*;
+import ast.statement.*;
+import ast.type.*;
+import java.util.List;
+import java.util.Arrays;
+import java.util.ArrayList;
+
+terminal VAR, TYPE, INTEGER, BOOLEAN, REAL, ARRAY, RECORD, TRUE, FALSE, IS;
+terminal IF, THEN, ELSE, END, FOR, IN, REVERSE, LOOP, WHILE, ROUTINE, RETURN;
+terminal PLUS, MINUS, MUL, DIV, MOD, ASSIGN, EQ, NE, GT, LT, GE, LE;
+terminal AND, OR, XOR, NOT;
+terminal LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, DOT, RANGE, COLON, SEMICOLON;
+terminal String IDENTIFIER;
+terminal Integer INTEGERNUM;
+terminal Double REALNUM;
+
+non terminal Program;
+non terminal ProgramUnit;
+non terminal DeclarationList;
+non terminal Declaration;
+non terminal VariableDeclaration;
+non terminal TypeDeclaration;
+non terminal Statement;
+non terminal Expression;
+non terminal Type;
+non terminal Function;
+non terminal ParamList;
+non terminal ReturnTypeOpt;
+non terminal NestedRecordAccess;
+non terminal ProgramUnits;
+non terminal DeclParamList;
+non terminal CallParamList;
+non terminal FuncParamList;
+non terminal Body;
+non terminal BodyList;
+
+/* Define precedences */
+precedence left OR, AND, XOR;
+precedence left EQ, NE, LT, GT, LE, GE;
+precedence left PLUS, MINUS;
+precedence left MUL, DIV, MOD;
+precedence right NOT;
+
+
+/* Grammar rules */
+Program ::= ProgramUnits:units {:
+                RESULT = new Program((List<ProgramUnit>) units);
+            :};
+
+ProgramUnits ::= ProgramUnits:units ProgramUnit:unit {:
+                    ((List<ProgramUnit>) units).add((ProgramUnit) unit);
+                    RESULT = units;
+                :}
+               | /* empty */ {: RESULT = new ArrayList<ProgramUnit>(); :};
+
+ProgramUnit ::= Declaration:decl {: RESULT = decl; :}
+              | Statement:stmt {: RESULT = stmt; :}
+              | Function:function {: RESULT = function; :};
+
+DeclarationList ::= Declaration:decl DeclarationList:list
+                 {:
+                    List<Declaration> decls = new ArrayList<>();
+                    decls.add((Declaration) decl);
+                    decls.addAll((List<Declaration>) list);
+                    RESULT = decls;
+                  :}
+                 | /* empty */ {: RESULT = new ArrayList<Declaration>(); :};
+
+Declaration ::= VariableDeclaration:varDecl {: RESULT = varDecl; :}
+              | TypeDeclaration:typeDecl {: RESULT = typeDecl; :};
+
+VariableDeclaration ::= VAR IDENTIFIER:id COLON Type:type SEMICOLON {: RESULT = new VariableDeclaration((String) id, (Type) type); :}
+                      | VAR IDENTIFIER:id COLON Type:type IS Expression:expr SEMICOLON {: RESULT = new VariableDeclaration((String) id, (Type) type, (Expression) expr); :}
+                      | VAR IDENTIFIER:id IS Expression:expr SEMICOLON {: RESULT = new VariableDeclaration((String) id, (Expression) expr); :};
+
+TypeDeclaration ::= TYPE IDENTIFIER:id IS Type:type SEMICOLON {: RESULT = new TypeDeclaration((String) id, (Type) type); :};
+
+Type ::= INTEGER {: RESULT = new IntegerType(); :}
+       | BOOLEAN {: RESULT = new BooleanType(); :}
+       | REAL {: RESULT = new RealType(); :}
+       | IDENTIFIER:id {: RESULT = new IdentifierType((String) id); :}
+       | ARRAY LBRACKET INTEGERNUM:size RBRACKET Type:elemType {: RESULT = new ArrayType((Integer) size, (Type) elemType); :}
+       | RECORD DeclarationList:fields END {: RESULT = new RecordType((List<Declaration>) fields); :};
+
+BodyList ::= Body:item BodyList:list {:
+                 List<Body> items = new ArrayList<>();
+                 items.add((Body) item);
+                 items.addAll((List<Body>) list);
+                 RESULT = items;
+             :}
+           | /* empty */ {: RESULT = new ArrayList<Body>(); :};
+
+Body ::= Declaration:decl {: RESULT = decl; :}
+        | Statement:stmt {: RESULT = stmt; :};
+
+Statement ::= IDENTIFIER:id ASSIGN Expression:expr SEMICOLON
+            {: RESULT = new AssignmentStatement((String) id, (Expression) expr); :}
+            | IDENTIFIER:id LBRACKET Expression:index RBRACKET ASSIGN Expression:expr SEMICOLON
+            {: RESULT = new AssignmentStatement((String) id, (Expression) index, (Expression) expr); :}
+            | NestedRecordAccess:recordField DOT IDENTIFIER:id ASSIGN Expression:expr SEMICOLON
+            {: RESULT = new AssignmentStatement((NestedRecordAccess) recordField, (String) id, (Expression) expr); :}
+            | IDENTIFIER:id LPAREN ParamList:paramList RPAREN SEMICOLON
+            {: RESULT = new CallStatement((String) id, (List<Expression>) paramList); :}
+            | IF Expression:cond THEN BodyList:thenBody END SEMICOLON
+            {: RESULT = new IfStatement((Expression) cond, (List<Body>) thenBody); :}
+            | IF Expression:cond THEN BodyList:thenBody ELSE BodyList:elseBody END SEMICOLON
+            {: RESULT = new IfStatement((Expression) cond, (List<Body>) thenBody, (List<Body>) elseBody); :}
+            | WHILE Expression:cond LOOP BodyList:body END SEMICOLON
+            {: RESULT = new WhileStatement((Expression) cond, (List<Body>) body); :}
+            | FOR IDENTIFIER:id IN Expression:start RANGE Expression:end LOOP BodyList:body END SEMICOLON
+            {:  RESULT = new ForStatement((String) id, (Expression) start, (Expression) end, false, (List<Body>) body); :}
+            | FOR IDENTIFIER:id IN REVERSE Expression:start RANGE Expression:end LOOP BodyList:body END SEMICOLON
+            {:  RESULT = new ForStatement((String) id, (Expression) start, (Expression) end, true, (List<Body>) body); :}
+            | RETURN Expression:expr SEMICOLON
+            {: RESULT = new ReturnStatement((Expression) expr); :};
+
+Expression ::= Expression:left PLUS Expression:right {: RESULT = new PlusExpression((Expression) left, (Expression) right); :}
+             | Expression:left MINUS Expression:right {: RESULT = new MinusExpression((Expression) left, (Expression) right); :}
+             | Expression:left MUL Expression:right {: RESULT = new MulExpression((Expression) left, (Expression) right); :}
+             | Expression:left DIV Expression:right {: RESULT = new DivExpression((Expression) left, (Expression) right); :}
+             | Expression:left MOD Expression:right {: RESULT = new ModExpression((Expression) left, (Expression) right); :}
+             | Expression:left EQ Expression:right {: RESULT = new EqualExpression((Expression) left, (Expression) right); :}
+             | Expression:left NE Expression:right {: RESULT = new NotEqualExpression((Expression) left, (Expression) right); :}
+             | Expression:left GT Expression:right {: RESULT = new GreaterThanExpression((Expression) left, (Expression) right); :}
+             | Expression:left LT Expression:right {: RESULT = new LessThanExpression((Expression) left, (Expression) right); :}
+             | Expression:left GE Expression:right {: RESULT = new GreaterEqualExpression((Expression) left, (Expression) right); :}
+             | Expression:left LE Expression:right {: RESULT = new LessEqualExpression((Expression) left, (Expression) right); :}
+             | Expression:left AND Expression:right {: RESULT = new AndExpression((Expression) left, (Expression) right); :}
+             | Expression:left OR Expression:right {: RESULT = new OrExpression((Expression) left, (Expression) right); :}
+             | Expression:left XOR Expression:right {: RESULT = new XorExpression((Expression) left, (Expression) right); :}
+             | NOT Expression:expr {: RESULT = new NotExpression((Expression) expr); :}
+             | TRUE {: RESULT = new BooleanLiteral(true); :}
+             | FALSE {: RESULT = new BooleanLiteral(false); :}
+             | INTEGERNUM:value {: RESULT = new IntegerLiteral((Integer) value); :}
+             | REALNUM:value {: RESULT = new RealLiteral((Double) value); :}
+             | IDENTIFIER:id LBRACKET Expression:index RBRACKET {: RESULT = new ArrayAccessExpression((String) id, (Expression) index); :}
+             | IDENTIFIER:id LPAREN ParamList:paramList RPAREN {: RESULT = new FunctionCallExpression((String) id, (List<Expression>) paramList); :}
+             | LPAREN Expression:expr RPAREN {: RESULT = new ParenthesizedExpression((Expression) expr); :}
+             | NestedRecordAccess:nra {: RESULT = nra; :};
+
+NestedRecordAccess ::= IDENTIFIER:id {: RESULT = new NestedRecordAccess((String) id); :}
+             | NestedRecordAccess:rec DOT IDENTIFIER:id {: RESULT = new NestedRecordAccess((NestedRecordAccess) rec, (String) id); :};
+
+Function ::= ROUTINE IDENTIFIER:id LPAREN FuncParamList:params RPAREN ReturnTypeOpt:returnType IS BodyList:body END SEMICOLON
+            {: RESULT = new Function((String) id, (List<Parameter>) params, (Type) returnType, (List<Body>) body); :};
+
+ParamList ::= /* empty */ {: RESULT = new ArrayList<Parameter>(); :}
+          | CallParamList:callList {: RESULT = callList; :};
+
+CallParamList ::= Expression:expr {:
+                  List<Expression> expressions = new ArrayList<>();
+                  expressions.add((Expression) expr);
+                  RESULT = expressions;
+              :}
+              | CallParamList:exprs COMMA Expression:expr {:
+                  ((List<Expression>) exprs).add((Expression) expr);
+                  RESULT = exprs;
+              :};
+
+FuncParamList ::= /* empty */ {: RESULT = new ArrayList<Parameter>(); :}
+               | DeclParamList:declList {: RESULT = declList; :};
+
+DeclParamList ::= IDENTIFIER:id COLON Type:type {:
+                  List<Parameter> params = new ArrayList<>();
+                  params.add(new Parameter((String) id, (Type) type));
+                  RESULT = params;
+              :}
+              | DeclParamList:params COMMA IDENTIFIER:id COLON Type:type {:
+                  ((List<Parameter>) params).add(new Parameter((String) id, (Type) type));
+                  RESULT = params;
+              :};
+
+ReturnTypeOpt ::= COLON Type:type {: RESULT = type; :}
+                | /* empty */ {: RESULT = null; :};
