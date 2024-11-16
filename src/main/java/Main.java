@@ -1,6 +1,7 @@
 import analyzer.SemanticAnalyzer;
 import ast.base.Program;
 import ast.visitor.ProgramVisitor;
+import generator.JasminCodeGenerator;
 import java_cup.runtime.Symbol;
 import lexer.Lexer;
 import parser.parser;
@@ -26,6 +27,9 @@ public class Main {
 
                 ProgramVisitor updatedVisitor = new ProgramVisitor();
                 result.accept(updatedVisitor);
+
+                JasminCodeGenerator javaCodeGenerator = new JasminCodeGenerator();
+                javaCodeGenerator.visit(result);
             } else {
                 System.out.println("Список units пуст или не был инициализирован.");
             }

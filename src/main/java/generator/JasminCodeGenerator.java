@@ -46,11 +46,14 @@ public class JasminCodeGenerator implements Visitor {
         writeIndented(".class public Program");
         writeIndented(".super java/lang/Object");
         writeIndented("");
+        writeIndented(".method public static main([Ljava/lang/String;)V");
         increaseIndent(() -> {
             for (ProgramUnit unit : program.units()) {
                 unit.accept(this);
             }
         });
+        writeIndented(".end method");
+        writer.close();
     }
 
     @Override
