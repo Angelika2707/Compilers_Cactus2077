@@ -14,13 +14,23 @@ import lombok.SneakyThrows;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class JasminCodeGenerator implements Visitor {
     private int indentLevel = 0;
     private final BufferedWriter writer;
+ //   private final Path outputDir = Paths.get("src", "main", "resources", "generator");
 
     @SneakyThrows
     public JasminCodeGenerator() {
+        /*
+        Path outputPath = outputDir.resolve("program.j");
+        Files.createDirectories(outputPath.getParent());
+        writer = new BufferedWriter(new FileWriter(outputPath.toFile()));
+
+         */
         writer = new BufferedWriter(new FileWriter("program.j"));
     }
 
@@ -48,12 +58,25 @@ public class JasminCodeGenerator implements Visitor {
         writeIndented("");
         writeIndented(".method public static main([Ljava/lang/String;)V");
         increaseIndent(() -> {
+            writeIndented(".limit stack 100");
+            writeIndented(".limit locals 100");
             for (ProgramUnit unit : program.units()) {
                 unit.accept(this);
             }
         });
         writeIndented(".end method");
         writer.close();
+        compileJasminToJava();
+    }
+
+    @SneakyThrows
+    private void compileJasminToJava() {
+        String jasminPath = "\"C:\\Program Files\\jasmin-2.4\\jasmin.jar\"";
+     //   Path programFilePath = outputDir.resolve("program.j");
+        Path programFilePath = Paths.get("program.j");
+        String command = String.format("java -jar %s %s", jasminPath, programFilePath);
+        Process process = Runtime.getRuntime().exec(command);
+        process.waitFor();
     }
 
     @Override
