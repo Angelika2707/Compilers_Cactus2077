@@ -7,6 +7,8 @@ import lexer.Lexer;
 import parser.parser;
 
 import java.io.FileReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class Main {
     public static void main(String[] args) {
