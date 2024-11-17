@@ -14,13 +14,16 @@ import lombok.SneakyThrows;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 public class JasminCodeGenerator implements Visitor {
     private int indentLevel = 0;
     private final BufferedWriter writer;
+    private final Map<String, Variable> variables = new HashMap<>();
+    private int index = 1;
  //   private final Path outputDir = Paths.get("src", "main", "resources", "generator");
 
     @SneakyThrows
@@ -44,6 +47,35 @@ public class JasminCodeGenerator implements Visitor {
     }
 
     @SneakyThrows
+    private void writeIndentedNotN(String text) {
+        writer.write(text);
+    }
+
+    @SneakyThrows
+    private void writeIndentedNotNStart(String text) {
+        for (int i = 0; i < indentLevel; i++) {
+            writer.write("    ");
+        }
+        writer.write(text);
+    }
+
+    @SneakyThrows
+    private void writeIndentedNotNEnd(String text) {
+        writer.write(text);
+        writer.newLine();
+    }
+
+    @SneakyThrows
+    private void writeIndentedFormat(String format, Object... args) {
+        for (int i = 0; i < indentLevel; i++) {
+            writer.write("    ");
+        }
+        String formattedText = String.format(format, args);
+        writer.write(formattedText);
+        writer.newLine();
+    }
+
+    @SneakyThrows
     private void increaseIndent(Runnable block) {
         indentLevel++;
         block.run();
@@ -63,6 +95,7 @@ public class JasminCodeGenerator implements Visitor {
             for (ProgramUnit unit : program.units()) {
                 unit.accept(this);
             }
+            writeIndented("return");
         });
         writeIndented(".end method");
         writer.close();
@@ -81,7 +114,53 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(VariableDeclaration variableDeclaration) {
+        Type type = variableDeclaration.type();
+        String identifier = variableDeclaration.id();
+        Expression expression = variableDeclaration.expression();
 
+        if (type == null) {
+            variables.put(identifier, new Variable(index, null));
+            writeIndentedNotNStart("ldc ");
+            expression.accept(this);
+            writeIndentedFormat("istore %d", index);
+            writeIndentedFormat(".var %d is %s", index, identifier);
+            index++;
+        } else if (expression == null) {
+            switch (type) {
+                case IntegerType intType -> variables.put(identifier, new Variable(index, intType));
+                case RealType realType -> variables.put(identifier, new Variable(index, realType));
+                case BooleanType booleanType -> variables.put(identifier, new Variable(index, booleanType));
+                default -> {}
+            }
+            writeIndentedFormat(".var %d is %s", index, identifier);
+            index++;
+        } else {
+            switch (type) {
+                case IntegerType intType -> {
+                    variables.put(identifier, new Variable(index, intType));
+                    writeIndentedNotNStart("ldc ");
+                    expression.accept(this);
+                    writeIndentedFormat("istore %d", index);
+                    writeIndentedFormat(".var %d is %s I", index, identifier);
+                }
+                case RealType realType -> {
+                    variables.put(identifier, new Variable(index, realType));
+                    writeIndentedNotNStart("ldc ");
+                    expression.accept(this);
+                    writeIndentedFormat("fstore %d", index);
+                    writeIndentedFormat(".var %d is %s F", index, identifier);
+                }
+                case BooleanType booleanType -> {
+                    variables.put(identifier, new Variable(index, booleanType));
+                    writeIndentedNotNStart("ldc ");
+                    expression.accept(this);
+                    writeIndentedFormat("istore %d", index);
+                    writeIndentedFormat(".var %d is %s I", index, identifier);
+                }
+                default -> {}
+            }
+            index++;
+        }
     }
 
     @Override
@@ -141,7 +220,7 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(BooleanLiteral booleanLiteral) {
-
+        writeIndentedNotNEnd(String.valueOf(booleanLiteral.value() ? 1 : 0));
     }
 
     @Override
@@ -171,7 +250,7 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(IntegerLiteral integerLiteral) {
-
+        writeIndentedNotNEnd(String.valueOf(integerLiteral.value()));
     }
 
     @Override
@@ -226,7 +305,7 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(RealLiteral realLiteral) {
-
+        writeIndentedNotNEnd(String.valueOf(realLiteral.value()));
     }
 
     @Override
@@ -261,7 +340,6 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(IntegerType integerType) {
-
     }
 
     @Override
