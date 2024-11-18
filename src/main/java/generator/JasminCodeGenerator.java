@@ -24,6 +24,7 @@ public class JasminCodeGenerator implements Visitor {
     private final BufferedWriter writer;
     private final Map<String, Variable> variables = new HashMap<>();
     private int index = 1;
+    private Expression lastDeclared = null;
  //   private final Path outputDir = Paths.get("src", "main", "resources", "generator");
 
     @SneakyThrows
@@ -122,18 +123,54 @@ public class JasminCodeGenerator implements Visitor {
             variables.put(identifier, new Variable(index, null));
             writeIndentedNotNStart("ldc ");
             expression.accept(this);
-            writeIndentedFormat("istore %d", index);
-            writeIndentedFormat(".var %d is %s", index, identifier);
+            switch (lastDeclared) {
+                case IntegerLiteral i -> {
+                    variables.put(identifier, new Variable(index, new IntegerType()));
+                    writeIndentedFormat("istore %d", index);
+                }
+                case RealLiteral r -> {
+                    variables.put(identifier, new Variable(index, new RealType()));
+                    writeIndentedFormat("fstore %d", index);
+                }
+                case BooleanLiteral b -> {
+                    variables.put(identifier, new Variable(index, new BooleanType()));
+                    writeIndentedFormat("istore %d", index);
+                }
+                default -> {}
+            }
             index++;
         } else if (expression == null) {
             switch (type) {
-                case IntegerType intType -> variables.put(identifier, new Variable(index, intType));
-                case RealType realType -> variables.put(identifier, new Variable(index, realType));
-                case BooleanType booleanType -> variables.put(identifier, new Variable(index, booleanType));
+                case IntegerType intType -> {
+                    variables.put(identifier, new Variable(index, intType));
+                    index++;
+                }
+                case RealType realType -> {
+                    variables.put(identifier, new Variable(index, realType));
+                    index++;
+                }
+                case BooleanType booleanType -> {
+                    variables.put(identifier, new Variable(index, booleanType));
+                    index++;
+                }
+                case ArrayType arrayType -> {
+                    variables.put(identifier, new Variable(index, arrayType));
+                    writeIndentedFormat("ldc %d", arrayType.size());
+                    switch (arrayType.elementType()) {
+                        case IntegerType intType -> writeIndented("newarray int");
+                        case RealType realType -> writeIndented("newarray float");
+                        case BooleanType booleanType -> writeIndented("newarray boolean");
+                        case IdentifierType identifierType -> {
+                            writeIndentedFormat("anewarray %s", identifierType.identifier());
+                        }
+                        default -> {}
+                    }
+                    writeIndentedFormat("astore %d", index);
+                    index += arrayType.size();
+                }
                 default -> {}
             }
-            writeIndentedFormat(".var %d is %s", index, identifier);
-            index++;
+
         } else {
             switch (type) {
                 case IntegerType intType -> {
@@ -142,6 +179,7 @@ public class JasminCodeGenerator implements Visitor {
                     expression.accept(this);
                     writeIndentedFormat("istore %d", index);
                     writeIndentedFormat(".var %d is %s I", index, identifier);
+                    index++;
                 }
                 case RealType realType -> {
                     variables.put(identifier, new Variable(index, realType));
@@ -149,17 +187,18 @@ public class JasminCodeGenerator implements Visitor {
                     expression.accept(this);
                     writeIndentedFormat("fstore %d", index);
                     writeIndentedFormat(".var %d is %s F", index, identifier);
+                    index++;
                 }
                 case BooleanType booleanType -> {
                     variables.put(identifier, new Variable(index, booleanType));
-                    writeIndentedNotNStart("ldc ");
+                    writeIndentedNotNStart("iconst_");
                     expression.accept(this);
                     writeIndentedFormat("istore %d", index);
-                    writeIndentedFormat(".var %d is %s I", index, identifier);
+                    writeIndentedFormat(".var %d is %s Z", index, identifier);
+                    index++;
                 }
                 default -> {}
             }
-            index++;
         }
     }
 
@@ -220,6 +259,7 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(BooleanLiteral booleanLiteral) {
+        lastDeclared = booleanLiteral;
         writeIndentedNotNEnd(String.valueOf(booleanLiteral.value() ? 1 : 0));
     }
 
@@ -250,6 +290,7 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(IntegerLiteral integerLiteral) {
+        lastDeclared = integerLiteral;
         writeIndentedNotNEnd(String.valueOf(integerLiteral.value()));
     }
 
@@ -305,6 +346,7 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(RealLiteral realLiteral) {
+        lastDeclared = realLiteral;
         writeIndentedNotNEnd(String.valueOf(realLiteral.value()));
     }
 
