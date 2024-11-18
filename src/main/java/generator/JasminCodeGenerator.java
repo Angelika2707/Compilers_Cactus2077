@@ -24,7 +24,8 @@ public class JasminCodeGenerator implements Visitor {
     private final BufferedWriter writer;
     private final Map<String, Variable> variables = new HashMap<>();
     private int index = 1;
-    private Expression lastDeclared = null;
+    private Expression last = null;
+    private boolean isNestedRecordRight = false;
  //   private final Path outputDir = Paths.get("src", "main", "resources", "generator");
 
     @SneakyThrows
@@ -121,9 +122,7 @@ public class JasminCodeGenerator implements Visitor {
 
         if (type == null) {
             variables.put(identifier, new Variable(index, null));
-            writeIndentedNotNStart("ldc ");
-            expression.accept(this);
-            switch (lastDeclared) {
+            switch (last) {
                 case IntegerLiteral i -> {
                     variables.put(identifier, new Variable(index, new IntegerType()));
                     writeIndentedFormat("istore %d", index);
@@ -166,7 +165,7 @@ public class JasminCodeGenerator implements Visitor {
                         default -> {}
                     }
                     writeIndentedFormat("astore %d", index);
-                    index += arrayType.size();
+                    index += arrayType.size() + 1;
                 }
                 default -> {}
             }
@@ -175,7 +174,6 @@ public class JasminCodeGenerator implements Visitor {
             switch (type) {
                 case IntegerType intType -> {
                     variables.put(identifier, new Variable(index, intType));
-                    writeIndentedNotNStart("ldc ");
                     expression.accept(this);
                     writeIndentedFormat("istore %d", index);
                     writeIndentedFormat(".var %d is %s I", index, identifier);
@@ -183,7 +181,6 @@ public class JasminCodeGenerator implements Visitor {
                 }
                 case RealType realType -> {
                     variables.put(identifier, new Variable(index, realType));
-                    writeIndentedNotNStart("ldc ");
                     expression.accept(this);
                     writeIndentedFormat("fstore %d", index);
                     writeIndentedFormat(".var %d is %s F", index, identifier);
@@ -191,7 +188,6 @@ public class JasminCodeGenerator implements Visitor {
                 }
                 case BooleanType booleanType -> {
                     variables.put(identifier, new Variable(index, booleanType));
-                    writeIndentedNotNStart("iconst_");
                     expression.accept(this);
                     writeIndentedFormat("istore %d", index);
                     writeIndentedFormat(".var %d is %s Z", index, identifier);
@@ -209,7 +205,61 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(AssignmentStatement assignmentStatement) {
+        if (assignmentStatement.recordField() == null) {
+            String identifier = assignmentStatement.identifier();
+            if (assignmentStatement.index() != null) {
+                int arrLink = variables.get(identifier).index();
+                writeIndentedFormat("aload %d", arrLink);
+                assignmentStatement.index().accept(this);
+                assignmentStatement.expression().accept(this);
+                ArrayType arrType = (ArrayType) variables.get(identifier).varInfo();
+                switch (arrType.elementType()) {
+                    case IntegerType intType -> writeIndentedFormat("iastore");
+                    case RealType realType -> writeIndentedFormat("fstore");
+                    case BooleanType booleanType -> writeIndentedFormat("bastore");
+                    case IdentifierType identifierType -> writeIndentedFormat("aastore");
+                    default -> {}
+                }
+            } else {
+                assignmentStatement.expression().accept(this);
+                int idx = variables.get(identifier).index();
+                Type type = variables.get(identifier).varInfo();
 
+                switch (last) {
+                    case IntegerLiteral i -> {}
+                    case RealLiteral r -> {}
+                    case BooleanLiteral b -> {}
+                    case NestedRecordAccess n -> {
+                        if (n.nestedAccess() == null) {
+                            int idxN = variables.get(n.identifier()).index();
+                            Type typeN = variables.get(n.identifier()).varInfo();
+                            switch (typeN) {
+                                case IntegerType intType -> writeIndentedFormat("iload %d", idxN);
+                                case RealType realType -> writeIndentedFormat("fload %d", idxN);
+                                case BooleanType booleanType -> writeIndentedFormat("iload %d", idxN);
+                                case ArrayType arrayType -> writeIndentedFormat("aload %d", idxN);
+                                case IdentifierType identifierType -> writeIndentedFormat("aload %d", idxN);
+                                default -> {}
+                            }
+                            n.accept(this);
+                        } else {
+
+                        }
+                    }
+                    default -> {}
+                }
+
+                switch (type) {
+                    case IntegerType intType -> writeIndentedFormat("istore %d", idx);
+                    case RealType realType -> writeIndentedFormat("fstore %d", idx);
+                    case BooleanType booleanType -> writeIndentedFormat("istore %d", idx);
+                    case IdentifierType identifierType -> {}
+                    default -> {}
+                }
+            }
+        } else {
+
+        }
     }
 
     @Override
@@ -239,7 +289,7 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(NestedRecordAccess nestedRecordAccess) {
-
+        last = nestedRecordAccess;
     }
 
     @Override
@@ -259,7 +309,8 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(BooleanLiteral booleanLiteral) {
-        lastDeclared = booleanLiteral;
+        writeIndentedNotNStart("iconst_");
+        last = booleanLiteral;
         writeIndentedNotNEnd(String.valueOf(booleanLiteral.value() ? 1 : 0));
     }
 
@@ -290,7 +341,8 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(IntegerLiteral integerLiteral) {
-        lastDeclared = integerLiteral;
+        writeIndentedNotNStart("ldc ");
+        last = integerLiteral;
         writeIndentedNotNEnd(String.valueOf(integerLiteral.value()));
     }
 
@@ -346,7 +398,8 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(RealLiteral realLiteral) {
-        lastDeclared = realLiteral;
+        writeIndentedNotNStart("ldc ");
+        last = realLiteral;
         writeIndentedNotNEnd(String.valueOf(realLiteral.value()));
     }
 
