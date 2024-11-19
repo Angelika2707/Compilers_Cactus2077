@@ -25,7 +25,6 @@ public class JasminCodeGenerator implements Visitor {
     private final Map<String, Variable> variables = new HashMap<>();
     private int index = 1;
     private Expression last = null;
-    private boolean isNestedRecordRight = false;
  //   private final Path outputDir = Paths.get("src", "main", "resources", "generator");
 
     @SneakyThrows
@@ -215,7 +214,7 @@ public class JasminCodeGenerator implements Visitor {
                 ArrayType arrType = (ArrayType) variables.get(identifier).varInfo();
                 switch (arrType.elementType()) {
                     case IntegerType ignored -> writeIndentedFormat("iastore");
-                    case RealType ignored -> writeIndentedFormat("fstore");
+                    case RealType ignored -> writeIndentedFormat("fastore");
                     case BooleanType ignored -> writeIndentedFormat("bastore");
                     case IdentifierType ignored -> writeIndentedFormat("aastore");
                     default -> {}
@@ -325,7 +324,18 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(ArrayAccessExpression arrayAccessExpression) {
-
+        String identifier = arrayAccessExpression.identifier();
+        int arrLink = variables.get(identifier).index();
+        writeIndentedFormat("aload %d", arrLink);
+        arrayAccessExpression.index().accept(this);
+        ArrayType arrType = (ArrayType) variables.get(identifier).varInfo();
+        switch (arrType.elementType()) {
+            case IntegerType ignored -> writeIndentedFormat("iaload");
+            case RealType ignored -> writeIndentedFormat("faload");
+            case BooleanType ignored -> writeIndentedFormat("baload");
+            case IdentifierType ignored -> writeIndentedFormat("aaload");
+            default -> {}
+        }
     }
 
     @Override
