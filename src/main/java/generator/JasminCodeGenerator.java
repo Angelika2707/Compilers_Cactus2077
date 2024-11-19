@@ -123,15 +123,15 @@ public class JasminCodeGenerator implements Visitor {
         if (type == null) {
             variables.put(identifier, new Variable(index, null));
             switch (last) {
-                case IntegerLiteral i -> {
+                case IntegerLiteral ignored -> {
                     variables.put(identifier, new Variable(index, new IntegerType()));
                     writeIndentedFormat("istore %d", index);
                 }
-                case RealLiteral r -> {
+                case RealLiteral ignored -> {
                     variables.put(identifier, new Variable(index, new RealType()));
                     writeIndentedFormat("fstore %d", index);
                 }
-                case BooleanLiteral b -> {
+                case BooleanLiteral ignored -> {
                     variables.put(identifier, new Variable(index, new BooleanType()));
                     writeIndentedFormat("istore %d", index);
                 }
@@ -156,9 +156,9 @@ public class JasminCodeGenerator implements Visitor {
                     variables.put(identifier, new Variable(index, arrayType));
                     writeIndentedFormat("ldc %d", arrayType.size());
                     switch (arrayType.elementType()) {
-                        case IntegerType intType -> writeIndented("newarray int");
-                        case RealType realType -> writeIndented("newarray float");
-                        case BooleanType booleanType -> writeIndented("newarray boolean");
+                        case IntegerType ignored -> writeIndented("newarray int");
+                        case RealType ignored -> writeIndented("newarray float");
+                        case BooleanType ignored -> writeIndented("newarray boolean");
                         case IdentifierType identifierType -> {
                             writeIndentedFormat("anewarray %s", identifierType.identifier());
                         }
@@ -214,10 +214,10 @@ public class JasminCodeGenerator implements Visitor {
                 assignmentStatement.expression().accept(this);
                 ArrayType arrType = (ArrayType) variables.get(identifier).varInfo();
                 switch (arrType.elementType()) {
-                    case IntegerType intType -> writeIndentedFormat("iastore");
-                    case RealType realType -> writeIndentedFormat("fstore");
-                    case BooleanType booleanType -> writeIndentedFormat("bastore");
-                    case IdentifierType identifierType -> writeIndentedFormat("aastore");
+                    case IntegerType ignored -> writeIndentedFormat("iastore");
+                    case RealType ignored -> writeIndentedFormat("fstore");
+                    case BooleanType ignored -> writeIndentedFormat("bastore");
+                    case IdentifierType ignored -> writeIndentedFormat("aastore");
                     default -> {}
                 }
             } else {
@@ -226,34 +226,60 @@ public class JasminCodeGenerator implements Visitor {
                 Type type = variables.get(identifier).varInfo();
 
                 switch (last) {
-                    case IntegerLiteral i -> {}
-                    case RealLiteral r -> {}
-                    case BooleanLiteral b -> {}
+                    case IntegerLiteral i -> {
+                        // int -> float
+                        if (type instanceof RealType) writeIndented("i2f");
+                        else if (type instanceof BooleanType && !(i.value() == 1 || i.value() == 0))
+                            throw new IllegalArgumentException
+                                    ("Invalid assignment: cannot convert value " + i.value() + " to boolean.");
+                    }
+                    case RealLiteral r -> {
+                        // float -> int
+                        if (type instanceof IntegerType) writeIndented("f2i");
+                        else if (type instanceof BooleanType)
+                            throw new IllegalArgumentException
+                                    ("Invalid assignment: cannot convert value of type real to boolean.");
+                    }
+                    case BooleanLiteral b -> {
+                        // int -> float
+                        if (type instanceof RealType) writeIndented("i2f");
+                    }
                     case NestedRecordAccess n -> {
+                        int idxN = variables.get(n.identifier()).index();
+                        Type typeN = variables.get(n.identifier()).varInfo();
                         if (n.nestedAccess() == null) {
-                            int idxN = variables.get(n.identifier()).index();
-                            Type typeN = variables.get(n.identifier()).varInfo();
                             switch (typeN) {
-                                case IntegerType intType -> writeIndentedFormat("iload %d", idxN);
-                                case RealType realType -> writeIndentedFormat("fload %d", idxN);
-                                case BooleanType booleanType -> writeIndentedFormat("iload %d", idxN);
-                                case ArrayType arrayType -> writeIndentedFormat("aload %d", idxN);
-                                case IdentifierType identifierType -> writeIndentedFormat("aload %d", idxN);
+                                case IntegerType ignored -> writeIndentedFormat("iload %d", idxN);
+                                case RealType ignored -> writeIndentedFormat("fload %d", idxN);
+                                case BooleanType ignored -> writeIndentedFormat("iload %d", idxN);
+                                case ArrayType ignored -> writeIndentedFormat("aload %d", idxN);
+                                case IdentifierType ignored -> writeIndentedFormat("aload %d", idxN);
                                 default -> {}
                             }
                             n.accept(this);
                         } else {
 
                         }
+
+                        if (type instanceof IntegerType && typeN instanceof RealType) {
+                            writeIndented("f2i"); // float -> int
+                        } else if (type instanceof RealType && typeN instanceof IntegerType) {
+                            writeIndented("i2f"); // int -> float
+                        } else if (type instanceof RealType && typeN instanceof BooleanType) {
+                            writeIndented("i2f"); // int -> float
+                        } else if (type instanceof BooleanType && typeN instanceof RealType) {
+                            throw new IllegalArgumentException
+                                    ("Invalid assignment: cannot convert value of type real to boolean.");
+                        }
                     }
                     default -> {}
                 }
 
                 switch (type) {
-                    case IntegerType intType -> writeIndentedFormat("istore %d", idx);
-                    case RealType realType -> writeIndentedFormat("fstore %d", idx);
-                    case BooleanType booleanType -> writeIndentedFormat("istore %d", idx);
-                    case IdentifierType identifierType -> {}
+                    case IntegerType ignored -> writeIndentedFormat("istore %d", idx);
+                    case RealType ignored -> writeIndentedFormat("fstore %d", idx);
+                    case BooleanType ignored -> writeIndentedFormat("istore %d", idx);
+                    case IdentifierType ignored -> {}
                     default -> {}
                 }
             }
