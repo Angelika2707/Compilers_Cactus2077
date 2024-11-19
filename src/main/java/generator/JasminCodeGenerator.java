@@ -314,15 +314,13 @@ public class JasminCodeGenerator implements Visitor {
     }
 
     @Override
-    public void visit(NestedRecordAccess nestedRecordAccess) {
-        last = nestedRecordAccess;
+    public void visit(Function function) {
+
     }
 
     @Override
-    public void visit(AndExpression andExpression) {
-        andExpression.left().accept(this);
-        andExpression.right().accept(this);
-        writeIndented("iand");
+    public void visit(Parameter parameter) {
+
     }
 
     @Override
@@ -331,15 +329,52 @@ public class JasminCodeGenerator implements Visitor {
     }
 
     @Override
-    public void visit(BinaryExpression binaryExpression) {
+    public void visit(FunctionCallExpression functionCallExpression) {
 
     }
 
     @Override
-    public void visit(BooleanLiteral booleanLiteral) {
-        writeIndentedNotNStart("iconst_");
-        last = booleanLiteral;
-        writeIndentedNotNEnd(String.valueOf(booleanLiteral.value() ? 1 : 0));
+    public void visit(BinaryExpression binaryExpression) {}
+
+    @Override
+    public void visit(ParenthesizedExpression parenthesizedExpression) {
+        parenthesizedExpression.expr().accept(this);
+    }
+
+    @Override
+    public void visit(PlusExpression plusExpression) {
+        plusExpression.left().accept(this);
+        plusExpression.right().accept(this);
+
+        if (last instanceof IntegerLiteral) {
+            writeIndented("iadd");
+        } else if (last instanceof RealLiteral) {
+            writeIndented("fadd");
+        }
+    }
+
+    @Override
+    public void visit(MinusExpression minusExpression) {
+        minusExpression.left().accept(this);
+        minusExpression.right().accept(this);
+
+        if (last instanceof IntegerLiteral) {
+            writeIndented("isub");
+        } else if (last instanceof RealLiteral) {
+            writeIndented("fsub");
+        }
+    }
+
+    @Override
+    public void visit(MulExpression mulExpression) {
+        mulExpression.left().accept(this);
+        mulExpression.right().accept(this);
+
+        if (last instanceof IntegerLiteral) {
+            writeIndented("imul");
+        } else if (last instanceof RealLiteral) {
+            writeIndented("fmul");
+        }
     }
 
     @Override
@@ -355,6 +390,13 @@ public class JasminCodeGenerator implements Visitor {
     }
 
     @Override
+    public void visit(ModExpression modExpression) {
+        modExpression.left().accept(this);
+        modExpression.right().accept(this);
+        writeIndented("irem");
+    }
+
+    @Override
     public void visit(EqualExpression equalExpression) {
         equalExpression.left().accept(this);
         equalExpression.right().accept(this);
@@ -367,8 +409,15 @@ public class JasminCodeGenerator implements Visitor {
     }
 
     @Override
-    public void visit(FunctionCallExpression functionCallExpression) {
-
+    public void visit(NotEqualExpression notEqualExpression) {
+        notEqualExpression.left().accept(this);
+        notEqualExpression.right().accept(this);
+        writeIndented("if_icmpne Label_True");
+        writeIndented("iconst_0");
+        writeIndented("goto Label_End");
+        writeIndented("Label_True:");
+        writeIndented("iconst_1");
+        writeIndented("Label_End:");
     }
 
     @Override
@@ -396,13 +445,6 @@ public class JasminCodeGenerator implements Visitor {
     }
 
     @Override
-    public void visit(IntegerLiteral integerLiteral) {
-        writeIndentedNotNStart("ldc ");
-        last = integerLiteral;
-        writeIndentedNotNEnd(String.valueOf(integerLiteral.value()));
-    }
-
-    @Override
     public void visit(LessEqualExpression lessEqualExpression) {
         lessEqualExpression.left().accept(this);
         lessEqualExpression.right().accept(this);
@@ -427,46 +469,10 @@ public class JasminCodeGenerator implements Visitor {
     }
 
     @Override
-    public void visit(MinusExpression minusExpression) {
-        minusExpression.left().accept(this);
-        minusExpression.right().accept(this);
-
-        if (last instanceof IntegerLiteral) {
-            writeIndented("isub");
-        } else if (last instanceof RealLiteral) {
-            writeIndented("fsub");
-        }
-    }
-
-    @Override
-    public void visit(ModExpression modExpression) {
-        modExpression.left().accept(this);
-        modExpression.right().accept(this);
-        writeIndented("irem");
-    }
-
-    @Override
-    public void visit(MulExpression mulExpression) {
-        mulExpression.left().accept(this);
-        mulExpression.right().accept(this);
-
-        if (last instanceof IntegerLiteral) {
-            writeIndented("imul");
-        } else if (last instanceof RealLiteral) {
-            writeIndented("fmul");
-        }
-    }
-
-    @Override
-    public void visit(NotEqualExpression notEqualExpression) {
-        notEqualExpression.left().accept(this);
-        notEqualExpression.right().accept(this);
-        writeIndented("if_icmpne Label_True");
-        writeIndented("iconst_0");
-        writeIndented("goto Label_End");
-        writeIndented("Label_True:");
-        writeIndented("iconst_1");
-        writeIndented("Label_End:");
+    public void visit(AndExpression andExpression) {
+        andExpression.left().accept(this);
+        andExpression.right().accept(this);
+        writeIndented("iand");
     }
 
     @Override
@@ -484,20 +490,22 @@ public class JasminCodeGenerator implements Visitor {
     }
 
     @Override
-    public void visit(ParenthesizedExpression parenthesizedExpression) {
-        parenthesizedExpression.expr().accept(this);
+    public void visit(XorExpression xorExpression) {
+        xorExpression.left().accept(this);
+        xorExpression.right().accept(this);
+        writeIndented("ixor");
     }
 
     @Override
-    public void visit(PlusExpression plusExpression) {
-        plusExpression.left().accept(this);
-        plusExpression.right().accept(this);
+    public void visit(NestedRecordAccess nestedRecordAccess) {
+        last = nestedRecordAccess;
+    }
 
-        if (last instanceof IntegerLiteral) {
-            writeIndented("iadd");
-        } else if (last instanceof RealLiteral) {
-            writeIndented("fadd");
-        }
+    @Override
+    public void visit(IntegerLiteral integerLiteral) {
+        writeIndentedNotNStart("ldc ");
+        last = integerLiteral;
+        writeIndentedNotNEnd(String.valueOf(integerLiteral.value()));
     }
 
     @Override
@@ -508,20 +516,10 @@ public class JasminCodeGenerator implements Visitor {
     }
 
     @Override
-    public void visit(XorExpression xorExpression) {
-        xorExpression.left().accept(this);
-        xorExpression.right().accept(this);
-        writeIndented("ixor");
-    }
-
-    @Override
-    public void visit(Function function) {
-
-    }
-
-    @Override
-    public void visit(Parameter parameter) {
-
+    public void visit(BooleanLiteral booleanLiteral) {
+        writeIndentedNotNStart("iconst_");
+        last = booleanLiteral;
+        writeIndentedNotNEnd(String.valueOf(booleanLiteral.value() ? 1 : 0));
     }
 
     @Override
