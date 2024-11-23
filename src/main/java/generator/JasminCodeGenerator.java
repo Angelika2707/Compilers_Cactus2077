@@ -1,5 +1,6 @@
 package generator;
 
+import ast.base.Body;
 import ast.base.Program;
 import ast.base.ProgramUnit;
 import ast.declaration.TypeDeclaration;
@@ -25,6 +26,7 @@ public class JasminCodeGenerator implements Visitor {
     private final Map<String, Variable> variables = new HashMap<>();
     private int index = 1;
     private Expression last = null;
+    private final LabelGenerator labelGenerator = new LabelGenerator();
  //   private final Path outputDir = Paths.get("src", "main", "resources", "generator");
 
     @SneakyThrows
@@ -410,72 +412,84 @@ public class JasminCodeGenerator implements Visitor {
     public void visit(EqualExpression equalExpression) {
         equalExpression.left().accept(this);
         equalExpression.right().accept(this);
-        writeIndented("if_icmpeq Label_True");
+        String labelTrue = labelGenerator.generate("Label_True", false);
+        String labelEnd = labelGenerator.generate("Label_End", true);
+        writeIndentedFormat("if_icmpeq %s", labelTrue);
         writeIndented("iconst_0");
-        writeIndented("goto Label_End");
-        writeIndented("Label_True:");
+        writeIndentedFormat("goto %s", labelEnd);
+        writeIndentedFormat("%s:", labelTrue);
         writeIndented("iconst_1");
-        writeIndented("Label_End:");
+        writeIndentedFormat("%s:", labelEnd);
     }
 
     @Override
     public void visit(NotEqualExpression notEqualExpression) {
         notEqualExpression.left().accept(this);
         notEqualExpression.right().accept(this);
-        writeIndented("if_icmpne Label_True");
+        String labelTrue = labelGenerator.generate("Label_True", false);
+        String labelEnd = labelGenerator.generate("Label_End", true);
+        writeIndentedFormat("if_icmpne %s", labelTrue);
         writeIndented("iconst_0");
-        writeIndented("goto Label_End");
-        writeIndented("Label_True:");
+        writeIndentedFormat("goto %s", labelEnd);
+        writeIndentedFormat("%s:", labelTrue);
         writeIndented("iconst_1");
-        writeIndented("Label_End:");
+        writeIndentedFormat("%s:", labelEnd);
     }
 
     @Override
     public void visit(GreaterEqualExpression greaterEqualExpression) {
         greaterEqualExpression.left().accept(this);
         greaterEqualExpression.right().accept(this);
-        writeIndented("if_icmpge Label_True");
+        String labelTrue = labelGenerator.generate("Label_True", false);
+        String labelEnd = labelGenerator.generate("Label_End", true);
+        writeIndentedFormat("if_icmpge %s", labelTrue);
         writeIndented("iconst_0");
-        writeIndented("goto Label_End");
-        writeIndented("Label_True:");
+        writeIndentedFormat("goto %s", labelEnd);
+        writeIndentedFormat("%s:", labelTrue);
         writeIndented("iconst_1");
-        writeIndented("Label_End:");
+        writeIndentedFormat("%s:", labelEnd);
     }
 
     @Override
     public void visit(GreaterThanExpression greaterThanExpression) {
         greaterThanExpression.left().accept(this);
         greaterThanExpression.right().accept(this);
-        writeIndented("if_icmpgt Label_True");
+        String labelTrue = labelGenerator.generate("Label_True", false);
+        String labelEnd = labelGenerator.generate("Label_End", true);
+        writeIndentedFormat("if_icmpgt %s", labelTrue);
         writeIndented("iconst_0");
-        writeIndented("goto Label_End");
-        writeIndented("Label_True:");
+        writeIndentedFormat("goto %s", labelEnd);
+        writeIndentedFormat("%s:", labelTrue);
         writeIndented("iconst_1");
-        writeIndented("Label_End:");
+        writeIndentedFormat("%s:", labelEnd);
     }
 
     @Override
     public void visit(LessEqualExpression lessEqualExpression) {
         lessEqualExpression.left().accept(this);
         lessEqualExpression.right().accept(this);
-        writeIndented("if_icmple Label_True");
+        String labelTrue = labelGenerator.generate("Label_True", false);
+        String labelEnd = labelGenerator.generate("Label_End", true);
+        writeIndentedFormat("if_icmple %s", labelTrue);
         writeIndented("iconst_0");
-        writeIndented("goto Label_End");
-        writeIndented("Label_True:");
+        writeIndentedFormat("goto %s", labelEnd);
+        writeIndentedFormat("%s:", labelTrue);
         writeIndented("iconst_1");
-        writeIndented("Label_End:");
+        writeIndentedFormat("%s:", labelEnd);
     }
 
     @Override
     public void visit(LessThanExpression lessThanExpression) {
         lessThanExpression.left().accept(this);
         lessThanExpression.right().accept(this);
-        writeIndented("if_icmplt Label_True");
+        String labelTrue = labelGenerator.generate("Label_True", false);
+        String labelEnd = labelGenerator.generate("Label_End", true);
+        writeIndentedFormat("if_icmplt %s", labelTrue);
         writeIndented("iconst_0");
-        writeIndented("goto Label_End");
-        writeIndented("Label_True:");
+        writeIndentedFormat("goto %s", labelEnd);
+        writeIndentedFormat("%s:", labelTrue);
         writeIndented("iconst_1");
-        writeIndented("Label_End:");
+        writeIndentedFormat("%s:", labelEnd);
     }
 
     @Override
@@ -559,5 +573,13 @@ public class JasminCodeGenerator implements Visitor {
     @Override
     public void visit(RecordType recordType) {
 
+    }
+
+    private static class LabelGenerator {
+        private int counter = 0;
+
+        private String generate(String baseLabel, boolean inc) {
+            return baseLabel + "_" + (inc ? counter++ : counter);
+        }
     }
 }
