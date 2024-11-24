@@ -17,7 +17,9 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class JasminCodeGenerator implements Visitor {
@@ -86,8 +88,16 @@ public class JasminCodeGenerator implements Visitor {
     }
 
     @SneakyThrows
+    private void decreaseIndent(Runnable block) {
+        indentLevel--;
+        block.run();
+        indentLevel++;
+    }
+
+    @SneakyThrows
     @Override
     public void visit(Program program) {
+        List<Function> functions = new ArrayList<>();
         writeIndented(".class public Program");
         writeIndented(".super java/lang/Object");
         writeIndented("");
@@ -96,11 +106,21 @@ public class JasminCodeGenerator implements Visitor {
             writeIndented(".limit stack 100");
             writeIndented(".limit locals 100");
             for (ProgramUnit unit : program.units()) {
-                unit.accept(this);
+                if (unit instanceof Function) {
+                    functions.add((Function) unit);
+                } else {
+                    unit.accept(this);
+                }
             }
             writeIndented("return");
         });
         writeIndented(".end method");
+        increaseIndent(() -> {
+            for (Function function : functions) {
+                function.accept(this);
+            }
+        });
+
         writer.close();
         compileJasminToJava();
     }
@@ -316,12 +336,85 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(Function function) {
+        int funcVarIndex = index;
+        index = 1;
 
+        List<String> varsToDelete = new ArrayList<>();
+        decreaseIndent(() -> {
+            writeIndentedNotNStart(".method public " + function.identifier() + "(");
+        });
+
+        for (Parameter parameter: function.params()) {
+            parameter.accept(this);
+            variables.put(parameter.identifier(), new Variable(index++, parameter.type()));
+            varsToDelete.add(parameter.identifier());
+        }
+        writeIndentedNotN(")");
+        if (function.returnType() == null) {
+            writeIndentedNotNEnd("V");
+        } else {
+            switch (function.returnType()) {
+                case IntegerType i -> writeIndentedNotNEnd("I");
+                case RealType r -> writeIndentedNotNEnd("F");
+                case BooleanType b -> writeIndentedNotNEnd("Z");
+                case IdentifierType i -> writeIndentedNotN("L");
+                case ArrayType a -> {
+                    writeIndentedNotN("[");
+                    switch (a.elementType()) {
+                        case IntegerType i -> writeIndentedNotNEnd("I");
+                        case RealType r -> writeIndentedNotNEnd("F");
+                        case BooleanType b -> writeIndentedNotNEnd("Z");
+                        case IdentifierType i -> writeIndentedNotNEnd(i.identifier() + ";");
+                        default -> {}
+                    }
+                }
+                default -> {}
+            }
+        }
+
+        writeIndented(".limit stack 50");
+        writeIndented(".limit locals 50");
+
+        for (Body el: function.body()) {
+            if (el instanceof VariableDeclaration) {
+                varsToDelete.add(((VariableDeclaration) el).id());
+            } else if (el instanceof TypeDeclaration) {
+            }
+            el.accept(this);
+        }
+
+        if (function.returnType() == null) writeIndented("return");
+
+        decreaseIndent(() -> {
+            writeIndented(".end method");
+        });
+
+        for (String key: varsToDelete) {
+            variables.remove(key);
+        }
+
+        index = funcVarIndex;
     }
 
     @Override
     public void visit(Parameter parameter) {
-
+        switch (parameter.type()) {
+            case IntegerType i -> writeIndentedNotN("I");
+            case RealType r -> writeIndentedNotN("F");
+            case BooleanType b -> writeIndentedNotN("Z");
+            case IdentifierType i -> writeIndentedNotN("L");
+            case ArrayType a -> {
+                writeIndentedNotN("[");
+                switch (a.elementType()) {
+                    case IntegerType i -> writeIndentedNotN("I");
+                    case RealType r -> writeIndentedNotN("F");
+                    case BooleanType b -> writeIndentedNotN("Z");
+                    case IdentifierType i -> writeIndentedNotN(i.identifier() + ";");
+                    default -> {}
+                }
+            }
+            default -> {}
+        }
     }
 
     @Override
