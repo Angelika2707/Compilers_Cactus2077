@@ -301,7 +301,23 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(IfStatement ifStatement) {
-
+        ifStatement.condition().accept(this);
+        String labelElse = labelGenerator.generate("Label_Else", false);
+        String labelEnd = labelGenerator.generate("Label_End", true);
+        if (ifStatement.elseBody().isEmpty()) {
+            writeIndentedFormat("ifeq %s", labelEnd); // if else does not exist
+        } else {
+            writeIndentedFormat("ifeq %s", labelElse); // if 0
+        }
+        for (Body el: ifStatement.thenBody()) {
+            el.accept(this);
+        }
+        writeIndentedFormat("goto %s", labelEnd);
+        writeIndentedFormat("%s:", labelElse);
+        for (Body el: ifStatement.elseBody()) {
+            el.accept(this);
+        }
+        writeIndentedFormat("%s:", labelEnd);
     }
 
     @Override
