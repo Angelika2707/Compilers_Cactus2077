@@ -31,7 +31,7 @@ public class JasminCodeGenerator implements Visitor {
     private final Map<String, String> funcSignatures = new HashMap<>();
     private Function currentFunction = null;
     private final LabelGenerator labelGenerator = new LabelGenerator();
- //   private final Path outputDir = Paths.get("src", "main", "resources", "generator");
+    //   private final Path outputDir = Paths.get("src", "main", "resources", "generator");
 
     @SneakyThrows
     public JasminCodeGenerator() {
@@ -134,7 +134,7 @@ public class JasminCodeGenerator implements Visitor {
     @SneakyThrows
     private void compileJasminToJava() {
         String jasminPath = "\"C:\\Program Files\\jasmin-2.4\\jasmin.jar\"";
-     //   Path programFilePath = outputDir.resolve("program.j");
+        //   Path programFilePath = outputDir.resolve("program.j");
         Path programFilePath = Paths.get("program.j");
         String command = String.format("java -jar %s %s", jasminPath, programFilePath);
         Process process = Runtime.getRuntime().exec(command);
@@ -162,7 +162,8 @@ public class JasminCodeGenerator implements Visitor {
                     variables.put(identifier, new Variable(index, new BooleanType()));
                     writeIndentedFormat("istore %d", index);
                 }
-                default -> {}
+                default -> {
+                }
             }
             index++;
         } else if (expression == null) {
@@ -189,12 +190,14 @@ public class JasminCodeGenerator implements Visitor {
                         case IdentifierType identifierType -> {
                             writeIndentedFormat("anewarray %s", identifierType.identifier());
                         }
-                        default -> {}
+                        default -> {
+                        }
                     }
                     writeIndentedFormat("astore %d", index);
                     index += arrayType.size() + 1;
                 }
-                default -> {}
+                default -> {
+                }
             }
 
         } else {
@@ -220,7 +223,8 @@ public class JasminCodeGenerator implements Visitor {
                     writeIndentedFormat(".var %d is %s Z", index, identifier);
                     index++;
                 }
-                default -> {}
+                default -> {
+                }
             }
         }
     }
@@ -245,7 +249,8 @@ public class JasminCodeGenerator implements Visitor {
                     case RealType ignored -> writeIndentedFormat("fastore");
                     case BooleanType ignored -> writeIndentedFormat("bastore");
                     case IdentifierType ignored -> writeIndentedFormat("aastore");
-                    default -> {}
+                    default -> {
+                    }
                 }
             } else {
                 assignmentStatement.expression().accept(this);
@@ -281,7 +286,8 @@ public class JasminCodeGenerator implements Visitor {
                                 case BooleanType ignored -> writeIndentedFormat("iload %d", idxN);
                                 case ArrayType ignored -> writeIndentedFormat("aload %d", idxN);
                                 case IdentifierType ignored -> writeIndentedFormat("aload %d", idxN);
-                                default -> {}
+                                default -> {
+                                }
                             }
                             n.accept(this);
                         } else {
@@ -299,15 +305,18 @@ public class JasminCodeGenerator implements Visitor {
                                     ("Invalid assignment: cannot convert value of type real to boolean.");
                         }
                     }
-                    default -> {}
+                    default -> {
+                    }
                 }
 
                 switch (type) {
                     case IntegerType ignored -> writeIndentedFormat("istore %d", idx);
                     case RealType ignored -> writeIndentedFormat("fstore %d", idx);
                     case BooleanType ignored -> writeIndentedFormat("istore %d", idx);
-                    case IdentifierType ignored -> {}
-                    default -> {}
+                    case IdentifierType ignored -> {
+                    }
+                    default -> {
+                    }
                 }
             }
         } else {
@@ -325,12 +334,62 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(ForStatement forStatement) {
+        String labelStart = labelGenerator.generate("Label_Start", false);
+        String labelCondition = labelGenerator.generate("Label_Condition", false);
+        String labelEnd = labelGenerator.generate("Label_End", true);
+        if (forStatement.isReverse()) {
+            forStatement.endExpression().accept(this);
+        } else {
+            forStatement.startExpression().accept(this);
+        }
+        writeIndentedFormat("istore %d", index);
+        variables.put(forStatement.loopVariable(), new Variable(index++, new IntegerType()));
+        writeIndentedFormat("%s:", labelCondition);
+        writeIndentedFormat("iload %d", variables.get(forStatement.loopVariable()).index());
+        if (forStatement.isReverse()) {
+            forStatement.startExpression().accept(this);
+        } else {
+            forStatement.endExpression().accept(this);
+        }
+        if (forStatement.isReverse()) {
+            writeIndentedFormat("if_icmplt %s", labelEnd);
+        } else {
+            writeIndentedFormat("if_icmpgt %s", labelEnd);
+        }
+        writeIndentedFormat("%s:", labelStart);
+        for (Body el : forStatement.body()) {
+            el.accept(this);
+        }
 
+        if (forStatement.isReverse()) {
+            writeIndentedFormat("iinc %d -1", variables.get(forStatement.loopVariable()).index());
+        } else {
+            writeIndentedFormat("iinc %d 1", variables.get(forStatement.loopVariable()).index());
+        }
+        writeIndentedFormat("goto %s", labelCondition);
+        writeIndentedFormat("%s:", labelEnd);
+        variables.remove(forStatement.loopVariable());
     }
 
     @Override
     public void visit(IfStatement ifStatement) {
-
+        ifStatement.condition().accept(this);
+        String labelElse = labelGenerator.generate("Label_Else", false);
+        String labelEnd = labelGenerator.generate("Label_End", true);
+        if (ifStatement.elseBody().isEmpty()) {
+            writeIndentedFormat("ifeq %s", labelEnd); // if else does not exist
+        } else {
+            writeIndentedFormat("ifeq %s", labelElse); // if 0
+        }
+        for (Body el : ifStatement.thenBody()) {
+            el.accept(this);
+        }
+        writeIndentedFormat("goto %s", labelEnd);
+        writeIndentedFormat("%s:", labelElse);
+        for (Body el : ifStatement.elseBody()) {
+            el.accept(this);
+        }
+        writeIndentedFormat("%s:", labelEnd);
     }
 
     @Override
@@ -340,7 +399,16 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(WhileStatement whileStatement) {
-
+        String labelStart = labelGenerator.generate("Label_Start", false);
+        String labelEnd = labelGenerator.generate("Label_End", true);
+        writeIndentedFormat("%s:", labelStart);
+        whileStatement.condition().accept(this);
+        writeIndentedFormat("ifeq %s", labelEnd);
+        for (Body el : whileStatement.body()) {
+            el.accept(this);
+        }
+        writeIndentedFormat("goto %s", labelStart);
+        writeIndentedFormat("%s:", labelEnd);
     }
 
     @Override
@@ -474,7 +542,8 @@ public class JasminCodeGenerator implements Visitor {
             case RealType ignored -> writeIndentedFormat("faload");
             case BooleanType ignored -> writeIndentedFormat("baload");
             case IdentifierType ignored -> writeIndentedFormat("aaload");
-            default -> {}
+            default -> {
+            }
         }
     }
 
@@ -487,7 +556,8 @@ public class JasminCodeGenerator implements Visitor {
     }
 
     @Override
-    public void visit(BinaryExpression binaryExpression) {}
+    public void visit(BinaryExpression binaryExpression) {
+    }
 
     @Override
     public void visit(ParenthesizedExpression parenthesizedExpression) {
