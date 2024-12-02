@@ -269,7 +269,6 @@ public class JasminCodeGenerator implements Visitor {
         String fileName = name + ".j";
 
         BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-        // Записываем заголовок класса
         writer.write(".class public " + name);
         writer.newLine();
         writer.write(".super java/lang/Object");
@@ -319,6 +318,23 @@ public class JasminCodeGenerator implements Visitor {
         }
 
         writer.newLine();
+
+        writer.write(".method public <init>()V");
+        writer.newLine();
+        writer.write("    .limit stack 1");
+        writer.newLine();
+        writer.write("    .limit locals 1");
+        writer.newLine();
+        writer.write("    aload_0");
+        writer.newLine();
+        writer.write("    invokespecial java/lang/Object/<init>()V");
+        writer.newLine();
+        writer.write("    return");
+        writer.newLine();
+        writer.write(".end method");
+        writer.newLine();
+        writer.newLine();
+
         writer.close();
     }
 
