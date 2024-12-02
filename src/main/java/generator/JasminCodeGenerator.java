@@ -394,7 +394,17 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(ReturnStatement returnStatement) {
-
+        returnStatement.returnExpression().accept(this);
+        String funcSignature = funcSignatures.get(currentFunction.identifier());
+        String returnType = funcSignature.split("\\)")[1];
+        if (returnType.length() > 1 && (returnType.startsWith("[") || returnType.startsWith("L"))) {
+            writeIndented("areturn");
+        }
+        switch (returnType) {
+            case "I", "Z" -> writeIndented("ireturn");
+            case "F" -> writeIndented("freturn");
+            default -> {}
+        }
     }
 
     @Override
@@ -504,6 +514,7 @@ public class JasminCodeGenerator implements Visitor {
         }
 
         index = funcVarIndex;
+        currentFunction = null;
     }
 
     @Override
