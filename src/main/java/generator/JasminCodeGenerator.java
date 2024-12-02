@@ -424,7 +424,20 @@ public class JasminCodeGenerator implements Visitor {
                 }
             }
         } else {
+            /*
+            example call
+                .limit stack 3
+                .limit locals 3 ;
 
+                new Person
+                dup
+                invokespecial Person/<init>()V
+                astore_0
+
+                aload_0
+                ldc 25
+                putfield Person/year I
+             */
         }
     }
 
