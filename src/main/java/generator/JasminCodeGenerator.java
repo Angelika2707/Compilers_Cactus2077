@@ -28,6 +28,8 @@ public class JasminCodeGenerator implements Visitor {
     private final Map<String, Variable> variables = new HashMap<>();
     private int index = 1;
     private Expression last = null;
+    private final Map<String, String> funcSignatures = new HashMap<>();
+    private Function currentFunction = null;
     private final LabelGenerator labelGenerator = new LabelGenerator();
  //   private final Path outputDir = Paths.get("src", "main", "resources", "generator");
 
@@ -101,25 +103,29 @@ public class JasminCodeGenerator implements Visitor {
         writeIndented(".class public Program");
         writeIndented(".super java/lang/Object");
         writeIndented("");
+        for (ProgramUnit unit : program.units()) {
+            if (unit instanceof Function) {
+                functions.add((Function) unit);
+            }
+        }
+        increaseIndent(() -> {
+            for (Function function : functions) {
+                function.accept(this);
+            }
+        });
+        writeIndented("");
         writeIndented(".method public static main([Ljava/lang/String;)V");
         increaseIndent(() -> {
             writeIndented(".limit stack 100");
             writeIndented(".limit locals 100");
             for (ProgramUnit unit : program.units()) {
-                if (unit instanceof Function) {
-                    functions.add((Function) unit);
-                } else {
+                if (!(unit instanceof Function)) {
                     unit.accept(this);
                 }
             }
             writeIndented("return");
         });
         writeIndented(".end method");
-        increaseIndent(() -> {
-            for (Function function : functions) {
-                function.accept(this);
-            }
-        });
 
         writer.close();
         compileJasminToJava();
@@ -311,7 +317,10 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(CallStatement callStatement) {
-
+        for (Expression e: callStatement.paramList()) {
+            e.accept(this);
+        }
+        writeIndented("invokestatic Program/" + funcSignatures.get(callStatement.identifier()));
     }
 
     @Override
@@ -336,13 +345,16 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(Function function) {
+        currentFunction = function;
         int funcVarIndex = index;
-        index = 1;
+        index = 0;
 
         List<String> varsToDelete = new ArrayList<>();
         decreaseIndent(() -> {
-            writeIndentedNotNStart(".method public " + function.identifier() + "(");
+            writeIndentedNotNStart(".method public static " + function.identifier() + "(");
         });
+
+        funcSignatures.put(function.identifier(), function.identifier() + "(");
 
         for (Parameter parameter: function.params()) {
             parameter.accept(this);
@@ -350,27 +362,57 @@ public class JasminCodeGenerator implements Visitor {
             varsToDelete.add(parameter.identifier());
         }
         writeIndentedNotN(")");
+
+        String stringType = "";
         if (function.returnType() == null) {
             writeIndentedNotNEnd("V");
+            stringType = "V";
         } else {
             switch (function.returnType()) {
-                case IntegerType i -> writeIndentedNotNEnd("I");
-                case RealType r -> writeIndentedNotNEnd("F");
-                case BooleanType b -> writeIndentedNotNEnd("Z");
-                case IdentifierType i -> writeIndentedNotN("L");
+                case IntegerType i -> {
+                    writeIndentedNotNEnd("I");
+                    stringType = "I";
+                }
+                case RealType r -> {
+                    writeIndentedNotNEnd("F");
+                    stringType = "F";
+                }
+                case BooleanType b -> {
+                    writeIndentedNotNEnd("Z");
+                    stringType = "Z";
+                }
+                case IdentifierType i -> {
+                    writeIndentedNotNEnd("L" + i.identifier() + ";");
+                    stringType = "L" + i.identifier() + ";";
+                }
                 case ArrayType a -> {
                     writeIndentedNotN("[");
+                    stringType = "[";
                     switch (a.elementType()) {
-                        case IntegerType i -> writeIndentedNotNEnd("I");
-                        case RealType r -> writeIndentedNotNEnd("F");
-                        case BooleanType b -> writeIndentedNotNEnd("Z");
-                        case IdentifierType i -> writeIndentedNotNEnd(i.identifier() + ";");
+                        case IntegerType i -> {
+                            writeIndentedNotNEnd("I");
+                            stringType += "I";
+                        }
+                        case RealType r -> {
+                            writeIndentedNotNEnd("F");
+                            stringType += "F";
+                        }
+                        case BooleanType b -> {
+                            writeIndentedNotNEnd("Z");
+                            stringType += "Z";
+                        }
+                        case IdentifierType i -> {
+                            writeIndentedNotNEnd("L" + i.identifier() + ";");
+                            stringType += "L" + i.identifier() + ";";
+                        }
                         default -> {}
                     }
                 }
                 default -> {}
             }
         }
+
+        funcSignatures.put(function.identifier(), funcSignatures.get(function.identifier()) + ")" + stringType);
 
         writeIndented(".limit stack 50");
         writeIndented(".limit locals 50");
@@ -398,23 +440,26 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(Parameter parameter) {
+        String param = "";
         switch (parameter.type()) {
-            case IntegerType i -> writeIndentedNotN("I");
-            case RealType r -> writeIndentedNotN("F");
-            case BooleanType b -> writeIndentedNotN("Z");
-            case IdentifierType i -> writeIndentedNotN("L");
+            case IntegerType i -> param = "I";
+            case RealType r -> param = "F";
+            case BooleanType b -> param = "Z";
+            case IdentifierType i -> param = "L" + i.identifier() + ";";
             case ArrayType a -> {
-                writeIndentedNotN("[");
+                param += "[";
                 switch (a.elementType()) {
-                    case IntegerType i -> writeIndentedNotN("I");
-                    case RealType r -> writeIndentedNotN("F");
-                    case BooleanType b -> writeIndentedNotN("Z");
-                    case IdentifierType i -> writeIndentedNotN(i.identifier() + ";");
+                    case IntegerType i -> param += "I";
+                    case RealType r -> param += "F";
+                    case BooleanType b -> param += "Z";
+                    case IdentifierType i -> param += "L" + i.identifier() + ";";
                     default -> {}
                 }
             }
             default -> {}
         }
+        writeIndentedNotN(param);
+        funcSignatures.put(currentFunction.identifier(), funcSignatures.get(currentFunction.identifier()) + param);
     }
 
     @Override
@@ -435,7 +480,10 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(FunctionCallExpression functionCallExpression) {
-
+        for (Expression e: functionCallExpression.parameters()) {
+            e.accept(this);
+        }
+        writeIndented("invokestatic Program/" + funcSignatures.get(functionCallExpression.functionName()));
     }
 
     @Override
