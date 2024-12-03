@@ -161,6 +161,7 @@ public class JasminCodeGenerator implements Visitor {
         Expression expression = variableDeclaration.expression();
         if (recordName != null) {
             records.get(recordName).put(identifier, type);
+            return;
         }
 
         if (type == null) {
@@ -210,7 +211,18 @@ public class JasminCodeGenerator implements Visitor {
                         }
                     }
                     writeIndentedFormat("astore %d", index);
-                    index += arrayType.size() + 1;
+                    //    index += arrayType.size() + 1;
+                    index++;
+                }
+                case IdentifierType identifierType -> {
+                    String recordName = identifierType.identifier();
+
+                    writeIndentedFormat("new %s", recordName);
+                    writeIndented("dup");
+                    writeIndentedFormat("invokespecial %s/<init>()V", recordName);
+
+                    variables.put(identifier, new Variable(index, identifierType));
+                    writeIndentedFormat("astore %d", index++);
                 }
                 default -> {
                 }
