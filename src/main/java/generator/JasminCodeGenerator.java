@@ -277,22 +277,7 @@ public class JasminCodeGenerator implements Visitor {
                         if (type instanceof RealType) writeIndented("i2f");
                     }
                     case NestedRecordAccess n -> {
-                        int idxN = variables.get(n.identifier()).index();
                         Type typeN = variables.get(n.identifier()).varInfo();
-                        if (n.nestedAccess() == null) {
-                            switch (typeN) {
-                                case IntegerType ignored -> writeIndentedFormat("iload %d", idxN);
-                                case RealType ignored -> writeIndentedFormat("fload %d", idxN);
-                                case BooleanType ignored -> writeIndentedFormat("iload %d", idxN);
-                                case ArrayType ignored -> writeIndentedFormat("aload %d", idxN);
-                                case IdentifierType ignored -> writeIndentedFormat("aload %d", idxN);
-                                default -> {
-                                }
-                            }
-                            n.accept(this);
-                        } else {
-
-                        }
 
                         if (type instanceof IntegerType && typeN instanceof RealType) {
                             writeIndented("f2i"); // float -> int
@@ -320,7 +305,6 @@ public class JasminCodeGenerator implements Visitor {
                 }
             }
         } else {
-
         }
     }
 
@@ -584,6 +568,17 @@ public class JasminCodeGenerator implements Visitor {
             writeIndented("iadd");
         } else if (last instanceof RealLiteral) {
             writeIndented("fadd");
+        } else if (last instanceof NestedRecordAccess n) {
+            if (n.nestedAccess() == null) {
+                Type type = variables.get(n.identifier()).varInfo();
+                switch (type) {
+                    case IntegerType ignored -> writeIndented("iadd");
+                    case RealType ignored -> writeIndented("fadd");
+                    default -> {}
+                }
+            } else {
+
+            }
         }
     }
 
@@ -596,6 +591,17 @@ public class JasminCodeGenerator implements Visitor {
             writeIndented("isub");
         } else if (last instanceof RealLiteral) {
             writeIndented("fsub");
+        } else if (last instanceof NestedRecordAccess n) {
+            if (n.nestedAccess() == null) {
+                Type type = variables.get(n.identifier()).varInfo();
+                switch (type) {
+                    case IntegerType ignored -> writeIndented("isub");
+                    case RealType ignored -> writeIndented("fsub");
+                    default -> {}
+                }
+            } else {
+
+            }
         }
     }
 
@@ -608,6 +614,17 @@ public class JasminCodeGenerator implements Visitor {
             writeIndented("imul");
         } else if (last instanceof RealLiteral) {
             writeIndented("fmul");
+        } else if (last instanceof NestedRecordAccess n) {
+            if (n.nestedAccess() == null) {
+                Type type = variables.get(n.identifier()).varInfo();
+                switch (type) {
+                    case IntegerType ignored -> writeIndented("imul");
+                    case RealType ignored -> writeIndented("fmul");
+                    default -> {}
+                }
+            } else {
+
+            }
         }
     }
 
@@ -620,6 +637,17 @@ public class JasminCodeGenerator implements Visitor {
             writeIndented("idiv");
         } else if (last instanceof RealLiteral) {
             writeIndented("fdiv");
+        } else if (last instanceof NestedRecordAccess n) {
+            if (n.nestedAccess() == null) {
+                Type type = variables.get(n.identifier()).varInfo();
+                switch (type) {
+                    case IntegerType ignored -> writeIndented("idiv");
+                    case RealType ignored -> writeIndented("fdiv");
+                    default -> {}
+                }
+            } else {
+
+            }
         }
     }
 
@@ -745,6 +773,33 @@ public class JasminCodeGenerator implements Visitor {
     @Override
     public void visit(NestedRecordAccess nestedRecordAccess) {
         last = nestedRecordAccess;
+        String identifier = nestedRecordAccess.identifier();
+        Variable variableInfo = variables.get(identifier);
+
+        int index = variableInfo.index();
+        Type type = variableInfo.varInfo();
+
+        if (nestedRecordAccess.nestedAccess() != null) {
+            switch (type) {
+                case IdentifierType ignored -> writeIndentedFormat("aload %d", index);
+                case ArrayType ignored -> writeIndentedFormat("aload %d", index);
+                case IntegerType ignored -> writeIndentedFormat("iload %d", index);
+                case RealType ignored -> writeIndentedFormat("fload %d", index);
+                case BooleanType ignored -> writeIndentedFormat("iload %d", index);
+                default -> {
+                }
+            }
+            nestedRecordAccess.nestedAccess().accept(this);
+        } else {
+            switch (type) {
+                case IntegerType ignored -> writeIndentedFormat("iload %d", index);
+                case RealType ignored -> writeIndentedFormat("fload %d", index);
+                case BooleanType ignored -> writeIndentedFormat("iload %d", index);
+                case ArrayType ignored -> writeIndentedFormat("aload %d", index);
+                case IdentifierType ignored -> writeIndentedFormat("aload %d", index);
+                default -> {}
+            }
+        }
     }
 
     @Override
