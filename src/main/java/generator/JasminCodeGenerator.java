@@ -3,6 +3,7 @@ package generator;
 import ast.base.Body;
 import ast.base.Program;
 import ast.base.ProgramUnit;
+import ast.declaration.Declaration;
 import ast.declaration.TypeDeclaration;
 import ast.declaration.VariableDeclaration;
 import ast.expression.*;
@@ -31,6 +32,8 @@ public class JasminCodeGenerator implements Visitor {
     private final Map<String, String> funcSignatures = new HashMap<>();
     private Function currentFunction = null;
     private final LabelGenerator labelGenerator = new LabelGenerator();
+    private String recordName = null;
+    private final Map<String, Map<String, Type>> records = new HashMap<>();
     //   private final Path outputDir = Paths.get("src", "main", "resources", "generator");
 
     @SneakyThrows
@@ -97,6 +100,16 @@ public class JasminCodeGenerator implements Visitor {
     }
 
     @SneakyThrows
+    private void writeRecord(BufferedWriter bufferedWriter, String format, Object... args) {
+        for (int i = 0; i < indentLevel; i++) {
+            bufferedWriter.write("    ");
+        }
+        String formattedText = String.format(format, args);
+        bufferedWriter.write(formattedText);
+        bufferedWriter.newLine();
+    }
+
+    @SneakyThrows
     @Override
     public void visit(Program program) {
         List<Function> functions = new ArrayList<>();
@@ -146,6 +159,9 @@ public class JasminCodeGenerator implements Visitor {
         Type type = variableDeclaration.type();
         String identifier = variableDeclaration.id();
         Expression expression = variableDeclaration.expression();
+        if (recordName != null) {
+            records.get(recordName).put(identifier, type);
+        }
 
         if (type == null) {
             variables.put(identifier, new Variable(index, null));
@@ -231,7 +247,95 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(TypeDeclaration typeDeclaration) {
+        Type type = typeDeclaration.type();
+        String identifier = typeDeclaration.id();
+        switch (type) {
+            case RecordType r -> {
+                records.put(identifier, new HashMap<>());
+                recordName = identifier;
+                for (Declaration field : r.fields()) {
+                    field.accept(this);
+                }
+                recordName = null;
+                createRecord(identifier);
+            }
+            default -> {
+            }
+        }
+    }
 
+    @SneakyThrows
+    private void createRecord(String name) {
+        String fileName = name + ".j";
+
+        BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
+        writer.write(".class public " + name);
+        writer.newLine();
+        writer.write(".super java/lang/Object");
+        writer.newLine();
+        writer.newLine();
+
+        Map<String, Type> fields = records.get(name);
+
+        // Генерация полей
+        for (String field : fields.keySet()) {
+            Type type = fields.get(field);
+            switch (type) {
+                case IntegerType i -> {
+                    decreaseIndent(() -> writeRecord(writer, ".field public %s I", field));
+                }
+                case RealType r -> {
+                    decreaseIndent(() -> writeRecord(writer, ".field public %s F", field));
+                }
+                case BooleanType b -> {
+                    decreaseIndent(() -> writeRecord(writer, ".field public %s Z", field));
+                }
+                case IdentifierType i -> {
+                    decreaseIndent(() -> writeRecord(writer, ".field public %s L%s;", field, i.identifier()));
+                }
+                case ArrayType a -> {
+                    Type elementType = a.elementType();
+
+                    switch (elementType) {
+                        case IntegerType i -> {
+                            decreaseIndent(() -> writeRecord(writer, ".field public %s [I;", field));
+                        }
+                        case RealType r -> {
+                            decreaseIndent(() -> writeRecord(writer, ".field public %s [F;", field));
+                        }
+                        case BooleanType b -> {
+                            decreaseIndent(() -> writeRecord(writer, ".field public %s [Z;", field));
+                        }
+                        case IdentifierType i -> {
+                            decreaseIndent(() -> writeRecord(writer, ".field public %s [L%s;", field, i.identifier()));
+                        }
+                        default -> {}
+                    }
+                }
+                default -> {
+                }
+            }
+        }
+
+        writer.newLine();
+
+        writer.write(".method public <init>()V");
+        writer.newLine();
+        writer.write("    .limit stack 1");
+        writer.newLine();
+        writer.write("    .limit locals 1");
+        writer.newLine();
+        writer.write("    aload_0");
+        writer.newLine();
+        writer.write("    invokespecial java/lang/Object/<init>()V");
+        writer.newLine();
+        writer.write("    return");
+        writer.newLine();
+        writer.write(".end method");
+        writer.newLine();
+        writer.newLine();
+
+        writer.close();
     }
 
     @Override
@@ -305,6 +409,20 @@ public class JasminCodeGenerator implements Visitor {
                 }
             }
         } else {
+            /*
+            example call
+                .limit stack 3
+                .limit locals 3 ;
+
+                new Person
+                dup
+                invokespecial Person/<init>()V
+                astore_0
+
+                aload_0
+                ldc 25
+                putfield Person/year I
+             */
         }
     }
 
