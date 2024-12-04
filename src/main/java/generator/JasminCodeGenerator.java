@@ -34,16 +34,9 @@ public class JasminCodeGenerator implements Visitor {
     private final LabelGenerator labelGenerator = new LabelGenerator();
     private String recordName = null;
     private final Map<String, Map<String, Type>> records = new HashMap<>();
-    //   private final Path outputDir = Paths.get("src", "main", "resources", "generator");
 
     @SneakyThrows
     public JasminCodeGenerator() {
-        /*
-        Path outputPath = outputDir.resolve("program.j");
-        Files.createDirectories(outputPath.getParent());
-        writer = new BufferedWriter(new FileWriter(outputPath.toFile()));
-
-         */
         writer = new BufferedWriter(new FileWriter("program.j"));
     }
 
@@ -735,8 +728,6 @@ public class JasminCodeGenerator implements Visitor {
                     case RealType ignored -> writeIndented("fadd");
                     default -> {}
                 }
-            } else {
-
             }
         }
     }
@@ -758,8 +749,6 @@ public class JasminCodeGenerator implements Visitor {
                     case RealType ignored -> writeIndented("fsub");
                     default -> {}
                 }
-            } else {
-
             }
         }
     }
@@ -781,8 +770,6 @@ public class JasminCodeGenerator implements Visitor {
                     case RealType ignored -> writeIndented("fmul");
                     default -> {}
                 }
-            } else {
-
             }
         }
     }
@@ -804,8 +791,6 @@ public class JasminCodeGenerator implements Visitor {
                     case RealType ignored -> writeIndented("fdiv");
                     default -> {}
                 }
-            } else {
-
             }
         }
     }
@@ -935,21 +920,52 @@ public class JasminCodeGenerator implements Visitor {
         String identifier = nestedRecordAccess.identifier();
         Variable variableInfo = variables.get(identifier);
 
-        int index = variableInfo.index();
-        Type type = variableInfo.varInfo();
-
         if (nestedRecordAccess.nestedAccess() != null) {
-            switch (type) {
-                case IdentifierType ignored -> writeIndentedFormat("aload %d", index);
-                case ArrayType ignored -> writeIndentedFormat("aload %d", index);
-                case IntegerType ignored -> writeIndentedFormat("iload %d", index);
-                case RealType ignored -> writeIndentedFormat("fload %d", index);
-                case BooleanType ignored -> writeIndentedFormat("iload %d", index);
-                default -> {
-                }
+            List<String> accessPath = nestedRecordAccess.getAccessPath();
+            Variable variable = variables.get(accessPath.getFirst());
+            writeIndentedFormat("aload %d", variable.index());
+            String name = "";
+            if (variable.varInfo() instanceof IdentifierType identifierType) {
+                name = identifierType.identifier();
             }
-            nestedRecordAccess.nestedAccess().accept(this);
+            accessPath.removeFirst();
+            while (!accessPath.isEmpty()) {
+                Map<String, Type> fields = records.get(name);
+                Type typeNext = fields.get(accessPath.getFirst());
+                if (typeNext instanceof IdentifierType) {
+                    String nextName = "";
+                    Type next = records.get(name).get(accessPath.getFirst());
+                    if (next instanceof IdentifierType) {
+                        nextName = ((IdentifierType) next).identifier();
+                    }
+                    writeIndentedFormat("getfield %s/%s L%s;", name, accessPath.getFirst(), nextName);
+                    name = nextName;
+                }
+                switch (typeNext) {
+                    case IntegerType ignored ->
+                        writeIndentedFormat("getfield %s/%s %s", name, accessPath.getFirst(), "I");
+                    case RealType ignored ->
+                        writeIndentedFormat("getfield %s/%s %s", name, accessPath.getFirst(), "F");
+                    case BooleanType ignored ->
+                        writeIndentedFormat("getfield %s/%s %s", name, accessPath.getFirst(), "Z");
+                    case ArrayType arrayType -> {
+                        String elemType = "";
+                        switch (arrayType.elementType()) {
+                            case IntegerType ignored -> elemType = "I";
+                            case RealType ignored -> elemType = "F";
+                            case BooleanType ignored -> elemType = "Z";
+                            case IdentifierType i -> elemType = "L" + i.identifier() + ";";
+                            default -> {}
+                        }
+                        writeIndentedFormat("getfield %s/%s [%s", name, accessPath.getFirst(), elemType);
+                    }
+                    default -> {}
+                }
+                accessPath.removeFirst();
+            }
         } else {
+            int index = variableInfo.index();
+            Type type = variableInfo.varInfo();
             switch (type) {
                 case IntegerType ignored -> writeIndentedFormat("iload %d", index);
                 case RealType ignored -> writeIndentedFormat("fload %d", index);
@@ -983,33 +999,22 @@ public class JasminCodeGenerator implements Visitor {
     }
 
     @Override
-    public void visit(ArrayType arrayType) {
-
-    }
+    public void visit(ArrayType arrayType) {}
 
     @Override
-    public void visit(BooleanType booleanType) {
-
-    }
+    public void visit(BooleanType booleanType) {}
 
     @Override
-    public void visit(IdentifierType identifierType) {
-
-    }
+    public void visit(IdentifierType identifierType) {}
 
     @Override
-    public void visit(IntegerType integerType) {
-    }
+    public void visit(IntegerType integerType) {}
 
     @Override
-    public void visit(RealType realType) {
-
-    }
+    public void visit(RealType realType) {}
 
     @Override
-    public void visit(RecordType recordType) {
-
-    }
+    public void visit(RecordType recordType) {}
 
     private static class LabelGenerator {
         private int counter = 0;
