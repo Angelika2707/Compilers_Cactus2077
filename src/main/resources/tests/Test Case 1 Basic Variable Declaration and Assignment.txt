@@ -9,4 +9,5 @@ isActive := false;
 
 y := x;
 x := isActive;
+y := x;
 x := y;

@@ -150,6 +150,7 @@ public class JasminCodeGenerator implements Visitor {
         }
 
         if (type == null) {
+            expression.accept(this);
             variables.put(identifier, new Variable(index, null));
             switch (last) {
                 case IntegerLiteral ignored -> {
