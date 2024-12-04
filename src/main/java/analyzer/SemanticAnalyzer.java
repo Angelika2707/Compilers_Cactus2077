@@ -139,6 +139,10 @@ public class SemanticAnalyzer {
                     isInsideFunction = true;
                     for (var element : functionDeclaration.body()) {
                         if (element instanceof Statement statement) {
+                            if (functionDeclaration.returnType() == null &&
+                                    statement instanceof ReturnStatement) {
+                                throw new IllegalStateException("Unexpected return statement in a void routine.");
+                            }
                             statement.accept(this);
                         }
                     }
