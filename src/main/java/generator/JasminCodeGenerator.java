@@ -179,8 +179,7 @@ public class JasminCodeGenerator implements Visitor {
                     variables.put(identifier, new Variable(index, new BooleanType()));
                     writeIndentedFormat("istore %d", index);
                 }
-                default -> {
-                }
+                default -> {}
             }
             index++;
         } else if (expression == null) {
@@ -204,11 +203,9 @@ public class JasminCodeGenerator implements Visitor {
                         case IntegerType ignored -> writeIndented("newarray int");
                         case RealType ignored -> writeIndented("newarray float");
                         case BooleanType ignored -> writeIndented("newarray boolean");
-                        case IdentifierType identifierType -> {
+                        case IdentifierType identifierType ->
                             writeIndentedFormat("anewarray %s", identifierType.identifier());
-                        }
-                        default -> {
-                        }
+                        default -> {}
                     }
                     writeIndentedFormat("astore %d", index);
                     //    index += arrayType.size() + 1;
@@ -224,8 +221,7 @@ public class JasminCodeGenerator implements Visitor {
                     variables.put(identifier, new Variable(index, identifierType));
                     writeIndentedFormat("astore %d", index++);
                 }
-                default -> {
-                }
+                default -> {}
             }
 
         } else {
@@ -251,8 +247,7 @@ public class JasminCodeGenerator implements Visitor {
                     writeIndentedFormat(".var %d is %s Z", index, identifier);
                     index++;
                 }
-                default -> {
-                }
+                default -> {}
             }
         }
     }
@@ -271,8 +266,7 @@ public class JasminCodeGenerator implements Visitor {
                 recordName = null;
                 createRecord(identifier);
             }
-            default -> {
-            }
+            default -> {}
         }
     }
 
@@ -292,31 +286,24 @@ public class JasminCodeGenerator implements Visitor {
         for (String field : fields.keySet()) {
             Type type = fields.get(field);
             switch (type) {
-                case IntegerType ignored -> {
+                case IntegerType ignored ->
                     decreaseIndent(() -> writeRecord(writer, ".field public %s I", field));
-                }
-                case RealType ignored -> {
+                case RealType ignored ->
                     decreaseIndent(() -> writeRecord(writer, ".field public %s F", field));
-                }
-                case BooleanType ignored -> {
+                case BooleanType ignored ->
                     decreaseIndent(() -> writeRecord(writer, ".field public %s Z", field));
-                }
-                case IdentifierType i -> {
+                case IdentifierType i ->
                     decreaseIndent(() -> writeRecord(writer, ".field public %s L%s;", field, i.identifier()));
-                }
                 case ArrayType a -> {
                     Type elementType = a.elementType();
 
                     switch (elementType) {
-                        case IntegerType ignored -> {
+                        case IntegerType ignored ->
                             decreaseIndent(() -> writeRecord(writer, ".field public %s [I", field));
-                        }
-                        case RealType ignored -> {
+                        case RealType ignored ->
                             decreaseIndent(() -> writeRecord(writer, ".field public %s [F", field));
-                        }
-                        case BooleanType ignored -> {
+                        case BooleanType ignored ->
                             decreaseIndent(() -> writeRecord(writer, ".field public %s [Z", field));
-                        }
                         case IdentifierType i ->
                             decreaseIndent(() -> writeRecord(writer, ".field public %s [L%s;", field, i.identifier()));
                         default -> {}
@@ -376,8 +363,7 @@ public class JasminCodeGenerator implements Visitor {
                     case RealType ignored -> writeIndentedFormat("fastore");
                     case BooleanType ignored -> writeIndentedFormat("bastore");
                     case IdentifierType ignored -> writeIndentedFormat("aastore");
-                    default -> {
-                    }
+                    default -> {}
                 }
             } else {
                 assignmentStatement.expression().accept(this);
@@ -392,14 +378,14 @@ public class JasminCodeGenerator implements Visitor {
                             throw new IllegalArgumentException
                                     ("Invalid assignment: cannot convert value " + i.value() + " to boolean.");
                     }
-                    case RealLiteral r -> {
+                    case RealLiteral ignored -> {
                         // float -> int
                         if (type instanceof IntegerType) writeIndented("f2i");
                         else if (type instanceof BooleanType)
                             throw new IllegalArgumentException
                                     ("Invalid assignment: cannot convert value of type real to boolean.");
                     }
-                    case BooleanLiteral b -> {
+                    case BooleanLiteral ignored -> {
                         // int -> float
                         if (type instanceof RealType) writeIndented("i2f");
                     }
@@ -417,8 +403,7 @@ public class JasminCodeGenerator implements Visitor {
                                     ("Invalid assignment: cannot convert value of type real to boolean.");
                         }
                     }
-                    default -> {
-                    }
+                    default -> {}
                 }
 
                 switch (type) {
@@ -427,8 +412,7 @@ public class JasminCodeGenerator implements Visitor {
                     case BooleanType ignored -> writeIndentedFormat("istore %d", idx);
                     case IdentifierType ignored -> {
                     }
-                    default -> {
-                    }
+                    default -> {}
                 }
             }
         } else {
@@ -589,9 +573,7 @@ public class JasminCodeGenerator implements Visitor {
         index = 0;
 
         List<String> varsToDelete = new ArrayList<>();
-        decreaseIndent(() -> {
-            writeIndentedNotNStart(".method public static " + function.identifier() + "(");
-        });
+        decreaseIndent(() -> writeIndentedNotNStart(".method public static " + function.identifier() + "("));
 
         funcSignatures.put(function.identifier(), function.identifier() + "(");
 
@@ -608,15 +590,15 @@ public class JasminCodeGenerator implements Visitor {
             stringType = "V";
         } else {
             switch (function.returnType()) {
-                case IntegerType i -> {
+                case IntegerType ignored -> {
                     writeIndentedNotNEnd("I");
                     stringType = "I";
                 }
-                case RealType r -> {
+                case RealType ignored -> {
                     writeIndentedNotNEnd("F");
                     stringType = "F";
                 }
-                case BooleanType b -> {
+                case BooleanType ignored -> {
                     writeIndentedNotNEnd("Z");
                     stringType = "Z";
                 }
@@ -628,15 +610,15 @@ public class JasminCodeGenerator implements Visitor {
                     writeIndentedNotN("[");
                     stringType = "[";
                     switch (a.elementType()) {
-                        case IntegerType i -> {
+                        case IntegerType ignored -> {
                             writeIndentedNotNEnd("I");
                             stringType += "I";
                         }
-                        case RealType r -> {
+                        case RealType ignored -> {
                             writeIndentedNotNEnd("F");
                             stringType += "F";
                         }
-                        case BooleanType b -> {
+                        case BooleanType ignored -> {
                             writeIndentedNotNEnd("Z");
                             stringType += "Z";
                         }
@@ -660,18 +642,18 @@ public class JasminCodeGenerator implements Visitor {
             if (el instanceof VariableDeclaration) {
                 varsToDelete.add(((VariableDeclaration) el).id());
             } else if (el instanceof TypeDeclaration) {
+                varsToDelete.add(((TypeDeclaration) el).id());
             }
             el.accept(this);
         }
 
         if (function.returnType() == null) writeIndented("return");
 
-        decreaseIndent(() -> {
-            writeIndented(".end method");
-        });
+        decreaseIndent(() -> writeIndented(".end method"));
 
         for (String key: varsToDelete) {
             variables.remove(key);
+            records.remove(key);
         }
 
         index = funcVarIndex;
@@ -682,16 +664,16 @@ public class JasminCodeGenerator implements Visitor {
     public void visit(Parameter parameter) {
         String param = "";
         switch (parameter.type()) {
-            case IntegerType i -> param = "I";
-            case RealType r -> param = "F";
-            case BooleanType b -> param = "Z";
+            case IntegerType ignored -> param = "I";
+            case RealType ignored -> param = "F";
+            case BooleanType ignored -> param = "Z";
             case IdentifierType i -> param = "L" + i.identifier() + ";";
             case ArrayType a -> {
                 param += "[";
                 switch (a.elementType()) {
-                    case IntegerType i -> param += "I";
-                    case RealType r -> param += "F";
-                    case BooleanType b -> param += "Z";
+                    case IntegerType ignored -> param += "I";
+                    case RealType ignored -> param += "F";
+                    case BooleanType ignored -> param += "Z";
                     case IdentifierType i -> param += "L" + i.identifier() + ";";
                     default -> {}
                 }
