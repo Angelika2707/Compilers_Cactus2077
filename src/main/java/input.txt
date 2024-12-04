@@ -1,6 +1,1 @@
-routine greet(num : integer) is
-    var result : integer is num + 10;
-    result2 := result + 10;
-end;
-
-greet(5);
+// Code should be written here
