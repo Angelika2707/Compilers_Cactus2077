@@ -1,10 +1,9 @@
 var x : integer is 10;
 if x > 5 then
     x := x + 1;
+    if x < 15 then
+        x := x - 5;
+    end;
 else
     x := x - 1;
-end;
-
-if x < 15 then
-    x := x - 5;
 end;

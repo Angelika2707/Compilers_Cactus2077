@@ -214,21 +214,18 @@ public class JasminCodeGenerator implements Visitor {
                     variables.put(identifier, new Variable(index, intType));
                     expression.accept(this);
                     writeFormattedIndentedLine("istore %d", index);
-                    writeFormattedIndentedLine(".var %d is %s I", index, identifier);
                     index++;
                 }
                 case RealType realType -> {
                     variables.put(identifier, new Variable(index, realType));
                     expression.accept(this);
                     writeFormattedIndentedLine("fstore %d", index);
-                    writeFormattedIndentedLine(".var %d is %s F", index, identifier);
                     index++;
                 }
                 case BooleanType booleanType -> {
                     variables.put(identifier, new Variable(index, booleanType));
                     expression.accept(this);
                     writeFormattedIndentedLine("istore %d", index);
-                    writeFormattedIndentedLine(".var %d is %s Z", index, identifier);
                     index++;
                 }
                 default -> {}
