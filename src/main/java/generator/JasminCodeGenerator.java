@@ -289,17 +289,16 @@ public class JasminCodeGenerator implements Visitor {
 
         Map<String, Type> fields = records.get(name);
 
-        // Генерация полей
         for (String field : fields.keySet()) {
             Type type = fields.get(field);
             switch (type) {
-                case IntegerType i -> {
+                case IntegerType ignored -> {
                     decreaseIndent(() -> writeRecord(writer, ".field public %s I", field));
                 }
-                case RealType r -> {
+                case RealType ignored -> {
                     decreaseIndent(() -> writeRecord(writer, ".field public %s F", field));
                 }
-                case BooleanType b -> {
+                case BooleanType ignored -> {
                     decreaseIndent(() -> writeRecord(writer, ".field public %s Z", field));
                 }
                 case IdentifierType i -> {
@@ -309,23 +308,21 @@ public class JasminCodeGenerator implements Visitor {
                     Type elementType = a.elementType();
 
                     switch (elementType) {
-                        case IntegerType i -> {
-                            decreaseIndent(() -> writeRecord(writer, ".field public %s [I;", field));
+                        case IntegerType ignored -> {
+                            decreaseIndent(() -> writeRecord(writer, ".field public %s [I", field));
                         }
-                        case RealType r -> {
-                            decreaseIndent(() -> writeRecord(writer, ".field public %s [F;", field));
+                        case RealType ignored -> {
+                            decreaseIndent(() -> writeRecord(writer, ".field public %s [F", field));
                         }
-                        case BooleanType b -> {
-                            decreaseIndent(() -> writeRecord(writer, ".field public %s [Z;", field));
+                        case BooleanType ignored -> {
+                            decreaseIndent(() -> writeRecord(writer, ".field public %s [Z", field));
                         }
-                        case IdentifierType i -> {
+                        case IdentifierType i ->
                             decreaseIndent(() -> writeRecord(writer, ".field public %s [L%s;", field, i.identifier()));
-                        }
                         default -> {}
                     }
                 }
-                default -> {
-                }
+                default -> {}
             }
         }
 
@@ -333,14 +330,28 @@ public class JasminCodeGenerator implements Visitor {
 
         writer.write(".method public <init>()V");
         writer.newLine();
-        writer.write("    .limit stack 1");
+        writer.write("    .limit stack " + (fields.size() + 1));
         writer.newLine();
-        writer.write("    .limit locals 1");
+        writer.write("    .limit locals " + (fields.size() + 1));
         writer.newLine();
         writer.write("    aload_0");
         writer.newLine();
         writer.write("    invokespecial java/lang/Object/<init>()V");
         writer.newLine();
+        for (String field : fields.keySet()) {
+            if (fields.get(field) instanceof IdentifierType i) {
+                writer.write("    aload_0");
+                writer.newLine();
+                writer.write("    new " + i.identifier());
+                writer.newLine();
+                writer.write("    dup");
+                writer.newLine();
+                writer.write( "    invokespecial " + i.identifier() + "/<init>()V");
+                writer.newLine();
+                writer.write("    putfield " + name + "/" + field + " L" + i.identifier() + ";");
+                writer.newLine();
+            }
+        }
         writer.write("    return");
         writer.newLine();
         writer.write(".end method");
@@ -352,8 +363,8 @@ public class JasminCodeGenerator implements Visitor {
 
     @Override
     public void visit(AssignmentStatement assignmentStatement) {
+        String identifier = assignmentStatement.identifier();
         if (assignmentStatement.recordField() == null) {
-            String identifier = assignmentStatement.identifier();
             if (assignmentStatement.index() != null) {
                 int arrLink = variables.get(identifier).index();
                 writeIndentedFormat("aload %d", arrLink);
@@ -421,20 +432,56 @@ public class JasminCodeGenerator implements Visitor {
                 }
             }
         } else {
-            /*
-            example call
-                .limit stack 3
-                .limit locals 3 ;
-
-                new Person
-                dup
-                invokespecial Person/<init>()V
-                astore_0
-
-                aload_0
-                ldc 25
-                putfield Person/year I
-             */
+            List<String> accessPath = assignmentStatement.recordField().getAccessPath();
+            accessPath.add(identifier);
+            Variable variable = variables.get(accessPath.getFirst());
+            writeIndentedFormat("aload %d", variable.index());
+            String name = "";
+            if (variable.varInfo() instanceof IdentifierType identifierType) {
+                name = identifierType.identifier();
+            }
+            accessPath.removeFirst();
+            while (!accessPath.isEmpty()) {
+                Map<String, Type> fields = records.get(name);
+                Type type = fields.get(accessPath.getFirst());
+                if (type instanceof IdentifierType) {
+                    String nextName = "";
+                    Type next = records.get(name).get(accessPath.getFirst());
+                    if (next instanceof IdentifierType) {
+                        nextName = ((IdentifierType) next).identifier();
+                    }
+                    writeIndentedFormat("getfield %s/%s L%s;", name, accessPath.getFirst(), nextName);
+                    name = nextName;
+                }
+                switch (type) {
+                    case IntegerType ignored -> {
+                        assignmentStatement.expression().accept(this);
+                        writeIndentedFormat("putfield %s/%s %s", name, accessPath.getFirst(), "I");
+                    }
+                    case RealType ignored -> {
+                        assignmentStatement.expression().accept(this);
+                        writeIndentedFormat("putfield %s/%s %s", name, accessPath.getFirst(), "F");
+                    }
+                    case BooleanType ignored -> {
+                        assignmentStatement.expression().accept(this);
+                        writeIndentedFormat("putfield %s/%s %s", name, accessPath.getFirst(), "Z");
+                    }
+                    case ArrayType arrayType -> {
+                        assignmentStatement.expression().accept(this);
+                        String elemType = "";
+                        switch (arrayType.elementType()) {
+                            case IntegerType ignored -> elemType = "I";
+                            case RealType ignored -> elemType = "F";
+                            case BooleanType ignored -> elemType = "Z";
+                            case IdentifierType i -> elemType = "L" + i.identifier() + ";";
+                            default -> {}
+                        }
+                        writeIndentedFormat("putfield %s/%s [%s", name, accessPath.getFirst(), elemType);
+                    }
+                    default -> {}
+                }
+                accessPath.removeFirst();
+            }
         }
     }
 
