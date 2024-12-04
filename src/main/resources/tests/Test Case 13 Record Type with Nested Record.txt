@@ -12,3 +12,4 @@ var p : Person;
 p.year := 22;
 p.address.streetCode := 126;
 p.address.cityCode := 202;
+p.address.cityCode := p.address.streetCode;

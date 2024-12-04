@@ -1,0 +1,8 @@
+var a : integer is 10;
+var b : integer is 20;
+var c : integer is 5;
+var d : integer is 3;
+var result : integer;
+
+result := (a + b * 2) / (c - d) + 15;
+a := result;

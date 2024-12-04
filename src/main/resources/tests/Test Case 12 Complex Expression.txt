@@ -1,4 +1,0 @@
-var a : integer is 10;
-var b : integer is 20;
-var result : integer;
-result := a + b * 2;

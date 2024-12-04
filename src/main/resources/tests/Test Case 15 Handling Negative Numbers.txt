@@ -1,12 +1,9 @@
 var a : integer is -5;
 var b : real is -10.75;
 
-routine addNegativeNumbers(x : integer, y : real) : real is
-    var sum : real;
-    sum := x + y;
+routine add(a : integer, b : integer) : integer is
+    return a + b;
 end;
 
-routine main() is
-    var result : real;
-    result := addNegativeNumbers(a, b);
-end;
+var result : integer is 0;
+result := result + add(-5, -3);

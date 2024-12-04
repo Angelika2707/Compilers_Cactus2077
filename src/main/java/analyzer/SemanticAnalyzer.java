@@ -112,6 +112,33 @@ public class SemanticAnalyzer {
                             case BooleanLiteral booleanLiteral -> throw new
                                     IllegalArgumentException("Invalid array index: boolean value '"
                                     + booleanLiteral.value() + "' cannot be used as an array index.");
+                            case Expression e when e instanceof BinaryExpression || e instanceof ParenthesizedExpression -> {
+                                noIdentifiers = true;
+                                e.accept(this);
+                                if (noIdentifiers) {
+                                    String res = simplify(e);
+                                    JexlExpression expression = jexl.createExpression(res);
+                                    JexlContext context = new MapContext();
+
+                                    Object evalExpr = expression.evaluate(context);
+                                    switch (evalExpr) {
+                                        case Integer i-> {
+                                            if (i < 1 || i > arrHashmap.get(assignmentStatement.identifier())) {
+                                                throw new ArrayIndexOutOfBoundsException("Index " + i
+                                                        + " is out of bounds for array " + assignmentStatement.identifier() + ".");
+                                            }
+                                        }
+                                        case Double d -> throw new
+                                                IllegalArgumentException("Invalid array index: real number "
+                                                + d + " cannot be used as an array index.");
+                                        case Boolean b -> throw new
+                                                IllegalArgumentException("Invalid array index: boolean value '"
+                                                + b + "' cannot be used as an array index.");
+                                        default -> {}
+                                    }
+                                    noIdentifiers = false;
+                                }
+                            }
                             default -> {
                             }
                         }
@@ -139,6 +166,10 @@ public class SemanticAnalyzer {
                     isInsideFunction = true;
                     for (var element : functionDeclaration.body()) {
                         if (element instanceof Statement statement) {
+                            if (functionDeclaration.returnType() == null &&
+                                    statement instanceof ReturnStatement) {
+                                throw new IllegalStateException("Unexpected return statement in a void routine.");
+                            }
                             statement.accept(this);
                         }
                     }
@@ -232,6 +263,33 @@ public class SemanticAnalyzer {
                         case BooleanLiteral booleanLiteral -> throw new
                                 IllegalArgumentException("Invalid array index: boolean value '"
                                 + booleanLiteral.value() + "' cannot be used as an array index.");
+                        case Expression e when e instanceof BinaryExpression || e instanceof ParenthesizedExpression -> {
+                            noIdentifiers = true;
+                            e.accept(this);
+                            if (noIdentifiers) {
+                                String res = simplify(e);
+                                JexlExpression expression = jexl.createExpression(res);
+                                JexlContext context = new MapContext();
+
+                                Object evalExpr = expression.evaluate(context);
+                                switch (evalExpr) {
+                                    case Integer i-> {
+                                        if (i < 1 || i > arrHashmap.get(arrayAccessExpression.identifier())) {
+                                            throw new ArrayIndexOutOfBoundsException("Index " + i
+                                                    + " is out of bounds for array " + arrayAccessExpression.identifier() + ".");
+                                        }
+                                    }
+                                    case Double d -> throw new
+                                            IllegalArgumentException("Invalid array index: real number "
+                                            + d + " cannot be used as an array index.");
+                                    case Boolean b -> throw new
+                                            IllegalArgumentException("Invalid array index: boolean value '"
+                                            + b + "' cannot be used as an array index.");
+                                    default -> {}
+                                }
+                                noIdentifiers = false;
+                            }
+                        }
                         default -> {
                         }
                     }

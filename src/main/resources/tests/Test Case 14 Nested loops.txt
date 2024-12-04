@@ -1,0 +1,7 @@
+var sum : integer is 0;
+for i in 1..5 loop
+    sum := sum + i;
+    for j in reverse 1..5 loop
+        sum := sum + j;
+    end;
+end;

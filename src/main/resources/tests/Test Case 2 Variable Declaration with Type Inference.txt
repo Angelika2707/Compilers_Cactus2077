@@ -1,2 +1,0 @@
-var y is 5.0;
-var z is true;

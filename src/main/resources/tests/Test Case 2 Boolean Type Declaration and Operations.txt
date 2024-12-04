@@ -9,3 +9,4 @@ result := a and b;
 result := a or b;
 result := a xor b;
 result := not a;
+result := not result;

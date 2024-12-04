@@ -1,0 +1,7 @@
+routine areaRectangle(a : integer, b : integer) : integer is
+    return a * b;
+end;
+
+var result : integer is 0;
+result := areaRectangle(5, 4);
+result := result + 0;

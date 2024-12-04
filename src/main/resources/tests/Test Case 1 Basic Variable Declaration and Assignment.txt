@@ -1,5 +1,13 @@
 var x : integer is 10;
 x := 20;
 
-var y1 : integer is 15;
-y1 := 25;
+var y : real;
+y := 30.7;
+
+var isActive is true;
+isActive := false;
+
+y := x;
+x := isActive;
+y := x;
+x := y;
